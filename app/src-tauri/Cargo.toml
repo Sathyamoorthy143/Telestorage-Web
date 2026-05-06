@@ -24,7 +24,7 @@ grammers-client = { git = "https://github.com/Lonami/grammers", rev = "d07f96f" 
 grammers-session = { git = "https://github.com/Lonami/grammers", rev = "d07f96f" }
 grammers-mtsender = { git = "https://github.com/Lonami/grammers", rev = "d07f96f" }
 grammers-tl-types = { git = "https://github.com/Lonami/grammers", rev = "d07f96f" }
-tokio-util = { version = "1", features = ["codec"] }
+tokio-util = { version = "0.7", features = ["codec"] }
 bytes = "1"
 tokio = { version = "1", features = ["full"] }
 walkdir = "2"
