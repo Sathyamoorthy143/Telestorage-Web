@@ -10,6 +10,7 @@ use std::path::Path;
 use walkdir::WalkDir;
 use futures::StreamExt;
 use tokio_util::codec::{BytesCodec, FramedRead};
+use tokio_util::io::StreamReader;
 use std::time::Instant;
 
 #[tauri::command]
@@ -181,7 +182,8 @@ pub async fn cmd_upload_file(
         item.map(|b| b.freeze())
     });
 
-    let uploaded_file = client.upload_stream(&mut stream, size as usize, filename).await
+    let mut reader = StreamReader::new(stream);
+    let uploaded_file = client.upload_stream(&mut reader, size as usize, filename).await
         .map_err(|e| format!("Upload failed: {}", e))?;
         
     let message = InputMessage::new().text("").file(uploaded_file);
