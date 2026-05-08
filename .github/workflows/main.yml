@@ -64,6 +64,7 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_BUNDLER_DMG_IGNORE_CI: true
           # Apple signing disabled - produces unsigned app
           # To enable signing, add APPLE_CERTIFICATE, APPLE_CERTIFICATE_PASSWORD, 
           # and APPLE_SIGNING_IDENTITY secrets to your repository
