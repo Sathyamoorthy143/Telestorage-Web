@@ -54,26 +54,24 @@ pub async fn cmd_create_folder(
         ttl_period: None,
     }).await.map_err(map_error)?;
     
-    let (chat_id, access_hash) = match result {
+    let channel = match result {
         tl::enums::Updates::Updates(u) => {
-             let chat = u.chats.first().ok_or("No chat in updates")?;
+             let chat = u.chats.into_iter().next().ok_or("No chat in updates")?;
              match chat {
-                 tl::enums::Chat::Channel(c) => (c.id, c.access_hash.unwrap_or(0)),
+                 tl::enums::Chat::Channel(c) => c,
                  _ => return Err("Created chat is not a channel".to_string()),
              }
         },
         _ => return Err("Unexpected response (not Updates::Updates)".to_string()), 
     };
 
+    let chat_id = channel.id;
+    let access_hash = channel.access_hash.unwrap_or(0);
+
     // Cache the peer
     let mut cache = state.peer_cache.write().await;
     let peer = Peer::Channel(grammers_client::types::Channel {
-        raw: tl::types::Channel {
-            id: chat_id,
-            access_hash: Some(access_hash),
-            title: format!("{} [TD]", name),
-            ..Default::default()
-        }
+        raw: channel
     });
     cache.insert(chat_id, peer);
 
@@ -200,7 +198,7 @@ pub async fn cmd_upload_file(
     let app_handle_clone = app_handle.clone();
     let tid_clone = tid.clone();
 
-    let mut stream = FramedRead::new(file, BytesCodec::new()).map(move |item| {
+    let stream = FramedRead::new(file, BytesCodec::new()).map(move |item| {
         if let Ok(bytes) = &item {
             uploaded += bytes.len() as u64;
             
