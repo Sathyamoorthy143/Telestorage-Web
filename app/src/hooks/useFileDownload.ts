@@ -4,7 +4,7 @@ import { save, open } from '@tauri-apps/plugin-dialog';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import { toast } from 'sonner';
 import { DownloadItem, TelegramFile } from '../types';
-import type { Store } from '@tauri-apps/plugin-store';
+import { IStore as Store } from '../services/apiBridge';
 
 interface ProgressPayload {
     id: string;

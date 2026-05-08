@@ -6,7 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { QueueItem } from '../types';
 import { useFileDrop } from './useFileDrop';
-import type { Store } from '@tauri-apps/plugin-store';
+import { IStore as Store } from '../services/apiBridge';
 
 interface ProgressPayload {
     id: string;

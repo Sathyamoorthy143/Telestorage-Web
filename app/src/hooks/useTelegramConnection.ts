@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { invoke } from '@tauri-apps/api/core';
-import { Store } from '@tauri-apps/plugin-store';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useConfirm } from '../context/ConfirmContext';
 import { TelegramFolder, UserInfo } from '../types';
 import { useNetworkStatus } from './useNetworkStatus';
+import { callApi, getStore, IStore } from '../services/apiBridge';
 
 export function useTelegramConnection(onLogoutParent: () => void) {
     const queryClient = useQueryClient();
@@ -13,28 +12,21 @@ export function useTelegramConnection(onLogoutParent: () => void) {
 
     const [folders, setFolders] = useState<TelegramFolder[]>([]);
     const [activeFolderId, setActiveFolderId] = useState<number | null>(null);
-    const [store, setStore] = useState<Store | null>(null);
+    const [store, setStore] = useState<IStore | null>(null);
     const [isSyncing, setIsSyncing] = useState(false);
     const [isConnected, setIsConnected] = useState(true);
     const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
 
-
     const networkIsOnline = useNetworkStatus();
-
 
     useEffect(() => {
         const initStore = async () => {
             try {
-                let _store = await Store.load('config.json');
-                const checkId = await _store.get<string>('api_id');
-                if (!checkId) {
-                    _store = await Store.load('settings.json');
-                }
+                const _store = await getStore();
                 setStore(_store);
 
                 const savedFolders = await _store.get<TelegramFolder[]>('folders');
                 if (savedFolders) setFolders(savedFolders);
-
 
                 const savedActiveFolderId = await _store.get<number | null>('activeFolderId');
                 if (savedActiveFolderId !== undefined) setActiveFolderId(savedActiveFolderId);
@@ -43,9 +35,9 @@ export function useTelegramConnection(onLogoutParent: () => void) {
                 if (apiIdStr) {
                     try {
                         const apiId = parseInt(apiIdStr as string);
-                        await invoke('cmd_connect', { apiId });
+                        await callApi('cmd_connect', { apiId });
                         setIsConnected(true);
-                        const user = await invoke<UserInfo>('cmd_get_user_info');
+                        const user = await callApi<UserInfo>('cmd_get_user_info');
                         setUserInfo(user);
                         queryClient.invalidateQueries({ queryKey: ['files'] });
                     } catch {
@@ -85,7 +77,7 @@ export function useTelegramConnection(onLogoutParent: () => void) {
     const forceLogout = async () => {
         setIsConnected(false);
         try {
-            await invoke('cmd_clean_cache').catch(() => { });
+            await callApi('cmd_clean_cache').catch(() => { });
             if (store) {
                 await store.delete('api_id');
                 await store.delete('api_hash');
@@ -104,8 +96,8 @@ export function useTelegramConnection(onLogoutParent: () => void) {
         if (!await confirm({ title: "Sign Out", message: "Are you sure you want to sign out? This will disconnect your active session.", confirmText: "Sign Out", variant: 'danger' })) return;
 
         try {
-            await invoke('cmd_logout');
-            await invoke('cmd_clean_cache');
+            await callApi('cmd_logout');
+            await callApi('cmd_clean_cache');
             if (store) {
                 await store.delete('api_id');
                 await store.delete('api_hash');
@@ -123,7 +115,7 @@ export function useTelegramConnection(onLogoutParent: () => void) {
         if (!store) return;
         setIsSyncing(true);
         try {
-            const foundFolders = await invoke<TelegramFolder[]>('cmd_scan_folders');
+            const foundFolders = await callApi<TelegramFolder[]>('cmd_scan_folders');
             const merged = [...folders];
             let added = 0;
             for (const f of foundFolders) {
@@ -150,7 +142,7 @@ export function useTelegramConnection(onLogoutParent: () => void) {
     const handleCreateFolder = async (name: string) => {
         if (!store) return;
         try {
-            const newFolder = await invoke<TelegramFolder>('cmd_create_folder', { name });
+            const newFolder = await callApi<TelegramFolder>('cmd_create_folder', { name });
             const updated = [...folders, newFolder];
             setFolders(updated);
             await store.set('folders', updated);
@@ -171,7 +163,7 @@ export function useTelegramConnection(onLogoutParent: () => void) {
         })) return;
 
         try {
-            await invoke('cmd_delete_folder', { folderId });
+            await callApi('cmd_delete_folder', { folderId });
             const updated = folders.filter(f => f.id !== folderId);
             setFolders(updated);
             if (store) {
