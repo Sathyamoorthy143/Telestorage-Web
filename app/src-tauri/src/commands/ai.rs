@@ -33,8 +33,10 @@ pub async fn cmd_gemini_chat(
     prompt: String,
     settings_state: State<'_, SettingsState>,
 ) -> Result<String, String> {
-    let settings = settings_state.0.lock().unwrap();
-    let url = &settings.ai_proxy_url;
+    let url = {
+        let settings = settings_state.0.lock().unwrap();
+        settings.ai_proxy_url.clone()
+    };
 
     let client = Client::new();
     let body = serde_json::json!({
