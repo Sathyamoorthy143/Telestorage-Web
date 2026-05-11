@@ -20,7 +20,7 @@ impl Default for AppSettings {
             telegram_api_id: None,
             theme: "dark".to_string(),
             auto_login: true,
-            ai_proxy_url: "http://127.0.0.1:5000/chat".to_string(),
+            ai_proxy_url: "https://telegram-drive-desktop.onrender.com/chat".to_string(),
         }
     }
 }

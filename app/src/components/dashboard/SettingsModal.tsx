@@ -18,7 +18,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
     const [settings, setSettings] = useState<AppSettings>({
         theme: 'dark',
         auto_login: true,
-        ai_proxy_url: 'http://127.0.0.1:5000/chat'
+        ai_proxy_url: 'https://telegram-drive-desktop.onrender.com/chat'
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
