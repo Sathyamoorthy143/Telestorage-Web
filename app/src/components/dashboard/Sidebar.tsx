@@ -133,18 +133,30 @@ function RecursiveTree({
             ))}
 
             {contextMenu && (
-                <ContextMenu
-                    x={contextMenu.x}
-                    y={contextMenu.y}
-                    onClose={() => setContextMenu(null)}
-                    options={[
-                        { label: 'Rename', icon: Edit2, onClick: () => onRename(contextMenu.folderId, contextMenu.folderName) },
-                        { label: 'Cut', icon: Scissors, onClick: () => onCut(contextMenu.folderId) },
-                        { label: 'Copy', icon: Copy, onClick: () => onCopy(contextMenu.folderId) },
-                        { label: 'Properties', icon: Info, onClick: () => onProperties(contextMenu.folderId) },
-                        { label: 'Delete', icon: Trash2, onClick: () => onDelete(contextMenu.folderId, contextMenu.folderName), variant: 'danger' },
-                    ]}
-                />
+                <div 
+                    className="fixed z-50 min-w-[160px] bg-telegram-surface/95 backdrop-blur-xl border border-telegram-border rounded-lg shadow-2xl p-1.5 animate-in fade-in zoom-in-95 duration-100 flex flex-col gap-0.5"
+                    style={{ left: contextMenu.x, top: contextMenu.y }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <button onClick={() => { onRename(contextMenu.folderId, contextMenu.folderName); setContextMenu(null); }} className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full">
+                        <Edit2 className="w-4 h-4 text-purple-400" /> Rename
+                    </button>
+                    <button onClick={() => { onCut(contextMenu.folderId); setContextMenu(null); }} className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full">
+                        <Scissors className="w-4 h-4 text-orange-400" /> Cut
+                    </button>
+                    <button onClick={() => { onCopy(contextMenu.folderId); setContextMenu(null); }} className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full">
+                        <Copy className="w-4 h-4 text-blue-400" /> Copy
+                    </button>
+                    <button onClick={() => { onProperties(contextMenu.folderId); setContextMenu(null); }} className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full">
+                        <Info className="w-4 h-4 text-blue-300" /> Properties
+                    </button>
+                    <div className="h-px bg-telegram-border my-1" />
+                    <button onClick={() => { onDelete(contextMenu.folderId, contextMenu.folderName); setContextMenu(null); }} className="flex items-center gap-2 px-2 py-1.5 text-sm text-red-500 hover:bg-red-500/10 rounded transition-colors text-left w-full">
+                        <Trash2 className="w-4 h-4" /> Delete
+                    </button>
+                    {/* Backdrop to close menu */}
+                    <div className="fixed inset-0 -z-10" onClick={() => setContextMenu(null)} onContextMenu={(e) => { e.preventDefault(); setContextMenu(null); }} />
+                </div>
             )}
         </div>
     );
@@ -210,6 +222,10 @@ export function Sidebar({
                     setActiveId={setActiveFolderId}
                     onDrop={onDrop}
                     onDelete={onDelete}
+                    onRename={onRename}
+                    onCut={onCut}
+                    onCopy={onCopy}
+                    onProperties={onProperties}
                     onCreate={onCreate}
                 />
             </nav>
