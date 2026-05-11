@@ -16,11 +16,24 @@ export function useFileOperations(
     const { confirm } = useConfirm();
 
     const handleDelete = async (id: number) => {
-        if (!await confirm({ title: "Delete File", message: "Are you sure you want to delete this file?", confirmText: "Delete", variant: 'danger' })) return;
+        const item = displayedFiles.find(f => f.id === id);
+        const isFolder = item?.type === 'folder';
+        const title = isFolder ? "Delete Folder" : "Delete File";
+        const message = isFolder 
+            ? `Are you sure you want to delete the folder "${item.name}" and all its contents?`
+            : "Are you sure you want to delete this file?";
+
+        if (!await confirm({ title, message, confirmText: "Delete", variant: 'danger' })) return;
+        
         try {
-            await invoke('cmd_delete_file', { messageId: id, folderId: activeFolderId });
+            if (isFolder) {
+                await invoke('cmd_delete_folder', { folderId: id });
+                queryClient.invalidateQueries({ queryKey: ['folders'] });
+            } else {
+                await invoke('cmd_delete_file', { messageId: id, folderId: activeFolderId });
+            }
             queryClient.invalidateQueries({ queryKey: ['files', activeFolderId] });
-            toast.success("File deleted");
+            toast.success(`${isFolder ? 'Folder' : 'File'} deleted`);
         } catch (e) {
             toast.error(`Delete failed: ${e}`);
         }
@@ -28,13 +41,18 @@ export function useFileOperations(
 
     const handleBulkDelete = async () => {
         if (selectedIds.length === 0) return;
-        if (!await confirm({ title: "Delete Files", message: `Are you sure you want to delete ${selectedIds.length} files?`, confirmText: "Delete All", variant: 'danger' })) return;
+        if (!await confirm({ title: "Delete Items", message: `Are you sure you want to delete ${selectedIds.length} items?`, confirmText: "Delete All", variant: 'danger' })) return;
 
         let success = 0;
         let fail = 0;
         for (const id of selectedIds) {
+            const item = displayedFiles.find(f => f.id === id);
             try {
-                await invoke('cmd_delete_file', { messageId: id, folderId: activeFolderId });
+                if (item?.type === 'folder') {
+                    await invoke('cmd_delete_folder', { folderId: id });
+                } else {
+                    await invoke('cmd_delete_file', { messageId: id, folderId: activeFolderId });
+                }
                 success++;
             } catch {
                 fail++;
@@ -42,8 +60,9 @@ export function useFileOperations(
         }
         setSelectedIds([]);
         queryClient.invalidateQueries({ queryKey: ['files', activeFolderId] });
-        if (success > 0) toast.success(`Deleted ${success} files.`);
-        if (fail > 0) toast.error(`Failed to delete ${fail} files.`);
+        queryClient.invalidateQueries({ queryKey: ['folders'] });
+        if (success > 0) toast.success(`Deleted ${success} items.`);
+        if (fail > 0) toast.error(`Failed to delete ${fail} items.`);
     }
 
     const handleDownload = async (id: number, name: string) => {
@@ -145,27 +164,48 @@ export function useFileOperations(
     };
 
     const handleCut = (ids: number[]) => {
-        setClipboard({ type: 'cut', ids, sourceFolderId: activeFolderId });
+        const selectedFiles = displayedFiles.filter(f => ids.includes(f.id));
+        const fileIds = selectedFiles.filter(f => f.type !== 'folder').map(f => f.id);
+        const folderIds = selectedFiles.filter(f => f.type === 'folder').map(f => f.id);
+        
+        setClipboard({ 
+            type: 'cut', 
+            ids: fileIds, 
+            folderIds, // Add this to the type below if needed, or handle it here
+            sourceFolderId: activeFolderId 
+        } as any);
         toast.info(`Cut ${ids.length} items to clipboard.`);
     };
 
     const handleCopy = (ids: number[]) => {
-        setClipboard({ type: 'copy', ids, sourceFolderId: activeFolderId });
+        const selectedFiles = displayedFiles.filter(f => ids.includes(f.id));
+        const fileIds = selectedFiles.filter(f => f.type !== 'folder').map(f => f.id);
+        const folderIds = selectedFiles.filter(f => f.type === 'folder').map(f => f.id);
+
+        setClipboard({ 
+            type: 'copy', 
+            ids: fileIds, 
+            folderIds,
+            sourceFolderId: activeFolderId 
+        } as any);
         toast.info(`Copied ${ids.length} items to clipboard.`);
     };
 
     const handlePaste = async () => {
         if (!clipboard) return;
+        const cb = clipboard as any;
         try {
-            const command = clipboard.type === 'cut' ? 'cmd_move_files' : 'cmd_copy_files';
+            const command = cb.type === 'cut' ? 'cmd_move_files' : 'cmd_copy_files';
             await invoke(command, {
-                messageIds: clipboard.ids,
-                sourceFolderId: clipboard.sourceFolderId,
+                messageIds: cb.ids || [],
+                folderIds: cb.folderIds || [],
+                sourceFolderId: cb.sourceFolderId,
                 targetFolderId: activeFolderId
             });
-            toast.success(`${clipboard.type === 'cut' ? 'Moved' : 'Copied'} ${clipboard.ids.length} items.`);
+            toast.success(`${cb.type === 'cut' ? 'Moved' : 'Copied'} ${ (cb.ids?.length || 0) + (cb.folderIds?.length || 0) } items.`);
             queryClient.invalidateQueries({ queryKey: ['files', activeFolderId] });
-            if (clipboard.type === 'cut') setClipboard(null);
+            queryClient.invalidateQueries({ queryKey: ['folders'] });
+            if (cb.type === 'cut') setClipboard(null);
         } catch (e) {
             toast.error(`Paste failed: ${e}`);
         }

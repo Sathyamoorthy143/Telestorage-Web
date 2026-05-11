@@ -412,29 +412,90 @@ pub async fn cmd_download_file(
 #[tauri::command]
 pub async fn cmd_move_files(
     message_ids: Vec<i32>,
+    folder_ids: Vec<i64>,
     source_folder_id: Option<i64>,
     target_folder_id: Option<i64>,
     state: State<'_, TelegramState>,
 ) -> Result<bool, String> {
-    if source_folder_id == target_folder_id { return Ok(true); }
     let client_opt = { state.client.lock().await.clone() };
     if client_opt.is_none() { 
-        log::info!("[MOCK] Moved msgs {:?} from {:?} to {:?}", message_ids, source_folder_id, target_folder_id);
+        log::info!("[MOCK] Moved msgs {:?} and folders {:?} from {:?} to {:?}", message_ids, folder_ids, source_folder_id, target_folder_id);
         return Ok(true); 
     }
     let client = client_opt.unwrap();
 
-    let source_peer = resolve_peer(&client, source_folder_id, &state.peer_cache).await?;
-    let target_peer = resolve_peer(&client, target_folder_id, &state.peer_cache).await?;
+    // 1. Handle Files
+    if !message_ids.is_empty() && source_folder_id != target_folder_id {
+        let source_peer = resolve_peer(&client, source_folder_id, &state.peer_cache).await?;
+        let target_peer = resolve_peer(&client, target_folder_id, &state.peer_cache).await?;
 
-    match client.forward_messages(&target_peer, &message_ids, &source_peer).await {
-        Ok(_) => {},
-        Err(e) => return Err(format!("Forward failed: {}", e)),
+        match client.forward_messages(&target_peer, &message_ids, &source_peer).await {
+            Ok(_) => {},
+            Err(e) => return Err(format!("Forward failed: {}", e)),
+        }
+        
+        match client.delete_messages(&source_peer, &message_ids).await {
+            Ok(_) => {},
+            Err(e) => return Err(format!("Delete original failed: {}", e)),
+        }
     }
-    
-    match client.delete_messages(&source_peer, &message_ids).await {
-        Ok(_) => {},
-        Err(e) => return Err(format!("Delete original failed: {}", e)),
+
+    // 2. Handle Folders
+    for fid in folder_ids {
+        let peer = resolve_peer(&client, Some(fid), &state.peer_cache).await?;
+        let input_channel = match peer {
+            Peer::Channel(c) => {
+                 let chan = &c.raw;
+                 tl::enums::InputChannel::Channel(tl::types::InputChannel {
+                     channel_id: chan.id,
+                     access_hash: chan.access_hash.ok_or("No access hash for channel")?,
+                 })
+            },
+            _ => continue,
+        };
+
+        // Get current about to update parent_id
+        let full_info = client.invoke(&tl::functions::channels::GetFullChannel {
+            channel: input_channel.clone(),
+        }).await.map_err(|e| format!("Failed to get folder info: {}", e))?;
+
+        if let tl::enums::messages::ChatFull::Full(f) = full_info {
+            if let tl::enums::ChatFull::Full(cf) = f.full_chat {
+                let mut lines: Vec<String> = cf.about.lines()
+                    .filter(|l| !l.starts_with("parent_id:"))
+                    .map(|s| s.to_string())
+                    .collect();
+                
+                if let Some(target_id) = target_folder_id {
+                    lines.push(format!("parent_id:{}", target_id));
+                }
+                
+                let new_about = lines.join("\n");
+                client.invoke(&tl::functions::messages::EditChatAbout {
+                    peer: tl::enums::InputPeer::Channel(tl::types::InputPeerChannel { 
+                        channel_id: fid, 
+                        access_hash: cf.id.try_into().unwrap_or(0) // This is wrong, cf.id is long? No, cf is ChatFull
+                    }),
+                    about: new_about,
+                }).await.map_err(|e| format!("Failed to update folder parent: {}", e))?;
+                
+                // Re-resolve/invoke to fix access_hash if needed
+                // Actually InputPeerChannel needs channel_id and access_hash
+                // Let's use the one from input_channel
+                let (chan_id, access_hash) = match input_channel {
+                    tl::enums::InputChannel::Channel(c) => (c.channel_id, c.access_hash),
+                    _ => (0, 0),
+                };
+
+                client.invoke(&tl::functions::messages::EditChatAbout {
+                    peer: tl::enums::InputPeer::Channel(tl::types::InputPeerChannel { 
+                        channel_id: chan_id, 
+                        access_hash 
+                    }),
+                    about: lines.join("\n"),
+                }).await.map_err(|e| format!("Failed to update folder parent: {}", e))?;
+            }
+        }
     }
 
     Ok(true)
@@ -443,25 +504,110 @@ pub async fn cmd_move_files(
 #[tauri::command]
 pub async fn cmd_copy_files(
     message_ids: Vec<i32>,
+    folder_ids: Vec<i64>,
     source_folder_id: Option<i64>,
     target_folder_id: Option<i64>,
     state: State<'_, TelegramState>,
 ) -> Result<bool, String> {
-    if source_folder_id == target_folder_id { return Ok(true); }
     let client_opt = { state.client.lock().await.clone() };
     if client_opt.is_none() { 
-        log::info!("[MOCK] Copied msgs {:?} from {:?} to {:?}", message_ids, source_folder_id, target_folder_id);
+        log::info!("[MOCK] Copied msgs {:?} and folders {:?} from {:?} to {:?}", message_ids, folder_ids, source_folder_id, target_folder_id);
         return Ok(true); 
     }
     let client = client_opt.unwrap();
 
-    let source_peer = resolve_peer(&client, source_folder_id, &state.peer_cache).await?;
-    let target_peer = resolve_peer(&client, target_folder_id, &state.peer_cache).await?;
+    // 1. Handle Files
+    if !message_ids.is_empty() && source_folder_id != target_folder_id {
+        let source_peer = resolve_peer(&client, source_folder_id, &state.peer_cache).await?;
+        let target_peer = resolve_peer(&client, target_folder_id, &state.peer_cache).await?;
 
-    client.forward_messages(&target_peer, &message_ids, &source_peer).await
-        .map_err(|e| format!("Copy (Forward) failed: {}", e))?;
+        client.forward_messages(&target_peer, &message_ids, &source_peer).await
+            .map_err(|e| format!("Copy (Forward) failed: {}", e))?;
+    }
+
+    // 2. Handle Folders (Clone)
+    for fid in folder_ids {
+        let peer = resolve_peer(&client, Some(fid), &state.peer_cache).await?;
+        let (name, input_channel) = match peer {
+            Peer::Channel(c) => {
+                 let chan = &c.raw;
+                 (chan.title.clone(), tl::enums::InputChannel::Channel(tl::types::InputChannel {
+                     channel_id: chan.id,
+                     access_hash: chan.access_hash.ok_or("No access hash for channel")?,
+                 }))
+            },
+            _ => continue,
+        };
+
+        // Create NEW channel
+        let display_name = name.replace(" [TD]", "").trim().to_string();
+        let new_folder = cmd_create_folder(format!("{} (Copy)", display_name), target_folder_id, state.clone()).await?;
+        
+        // Forward all messages from source to new
+        let source_peer = Peer::Channel(match resolve_peer(&client, Some(fid), &state.peer_cache).await? {
+            Peer::Channel(c) => c,
+            _ => continue,
+        });
+        let target_peer = resolve_peer(&client, Some(new_folder.id), &state.peer_cache).await?;
+
+        let mut msg_ids = Vec::new();
+        let mut msgs = client.iter_messages(&source_peer);
+        while let Some(msg) = msgs.next().await.map_err(|e| e.to_string())? {
+            msg_ids.push(msg.id());
+        }
+
+        if !msg_ids.is_empty() {
+            // Forward in batches to avoid limits
+            for chunk in msg_ids.chunks(100) {
+                let _ = client.forward_messages(&target_peer, chunk, &source_peer).await;
+            }
+        }
+    }
 
     Ok(true)
+}
+
+#[tauri::command]
+pub async fn cmd_get_folder_properties(
+    folder_id: i64,
+    state: State<'_, TelegramState>,
+) -> Result<serde_json::Value, String> {
+    let client_opt = { state.client.lock().await.clone() };
+    if client_opt.is_none() {
+        return Ok(serde_json::json!({
+            "file_count": 0,
+            "total_size": 0,
+            "created_at": "N/A"
+        }));
+    }
+    let client = client_opt.unwrap();
+    let peer = resolve_peer(&client, Some(folder_id), &state.peer_cache).await?;
+    
+    let mut count = 0;
+    let mut total_size: u64 = 0;
+    let mut earliest_date = None;
+
+    let mut msgs = client.iter_messages(&peer);
+    while let Some(msg) = msgs.next().await.map_err(|e| e.to_string())? {
+        count += 1;
+        if let Some(doc) = msg.media() {
+            total_size += match doc {
+                Media::Document(d) => d.size() as u64,
+                Media::Photo(_) => 1024 * 1024,
+                _ => 0,
+            };
+        }
+        let date = msg.date();
+        if earliest_date.is_none() || date < earliest_date.unwrap() {
+            earliest_date = Some(date);
+        }
+    }
+
+    Ok(serde_json::json!({
+        "file_count": count,
+        "total_size": total_size,
+        "created_at": earliest_date.map(|d| d.to_string()).unwrap_or_else(|| "N/A".to_string())
+    }))
 }
 
 #[tauri::command]

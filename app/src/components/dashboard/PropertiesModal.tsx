@@ -1,6 +1,8 @@
-import { X, Calendar, Hash, HardDrive, Folder, Info } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { X, Calendar, Hash, HardDrive, Folder, Info, Loader2 } from 'lucide-react';
 import { TelegramFile } from '../../types';
 import { formatBytes } from '../../utils';
+import { invoke } from '@tauri-apps/api/core';
 
 interface PropertiesModalProps {
     file: TelegramFile;
@@ -8,6 +10,20 @@ interface PropertiesModalProps {
 }
 
 export function PropertiesModal({ file, onClose }: PropertiesModalProps) {
+    const [extra, setExtra] = useState<{ file_count: number; total_size: number; created_at: string } | null>(null);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (file.type === 'folder') {
+            setLoading(true);
+            invoke<{ file_count: number; total_size: number; created_at: string }>('cmd_get_folder_properties', { folderId: file.id })
+                .then(setExtra)
+                .finally(() => setLoading(false));
+        }
+    }, [file]);
+
+    const displaySize = extra ? extra.total_size : file.size;
+    const displayDate = extra ? extra.created_at : file.created_at;
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="glass-modal rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
@@ -36,23 +52,36 @@ export function PropertiesModal({ file, onClose }: PropertiesModalProps) {
                         <div className="flex items-center justify-between text-xs">
                             <div className="flex items-center gap-2 text-telegram-subtext">
                                 <HardDrive className="w-3.5 h-3.5" />
-                                <span>Size</span>
+                                <span>{file.type === 'folder' ? 'Total Size' : 'Size'}</span>
                             </div>
-                            <span className="text-telegram-text font-medium">{formatBytes(file.size)} ({file.size.toLocaleString()} bytes)</span>
+                            <div className="flex items-center gap-1">
+                                {loading && <Loader2 className="w-3 h-3 animate-spin text-telegram-primary" />}
+                                <span className="text-telegram-text font-medium">{formatBytes(displaySize)} ({displaySize.toLocaleString()} bytes)</span>
+                            </div>
                         </div>
+
+                        {file.type === 'folder' && extra && (
+                            <div className="flex items-center justify-between text-xs">
+                                <div className="flex items-center gap-2 text-telegram-subtext">
+                                    <Hash className="w-3.5 h-3.5" />
+                                    <span>Contains</span>
+                                </div>
+                                <span className="text-telegram-text font-medium">{extra.file_count} files</span>
+                            </div>
+                        )}
 
                         <div className="flex items-center justify-between text-xs">
                             <div className="flex items-center gap-2 text-telegram-subtext">
                                 <Calendar className="w-3.5 h-3.5" />
-                                <span>Created</span>
+                                <span>{file.type === 'folder' ? 'Earliest Message' : 'Created'}</span>
                             </div>
-                            <span className="text-telegram-text font-medium">{file.created_at ? new Date(file.created_at).toLocaleString() : 'N/A'}</span>
+                            <span className="text-telegram-text font-medium">{displayDate ? new Date(displayDate).toLocaleString() : 'N/A'}</span>
                         </div>
 
                         <div className="flex items-center justify-between text-xs">
                             <div className="flex items-center gap-2 text-telegram-subtext">
                                 <Hash className="w-3.5 h-3.5" />
-                                <span>Message ID</span>
+                                <span>{file.type === 'folder' ? 'Channel ID' : 'Message ID'}</span>
                             </div>
                             <span className="text-telegram-text font-mono">#{file.id}</span>
                         </div>

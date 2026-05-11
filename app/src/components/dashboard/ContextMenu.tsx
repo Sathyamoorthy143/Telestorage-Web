@@ -124,8 +124,7 @@ export function ContextMenu({
 
             <button 
                 onClick={onRename} 
-                disabled={file.type !== 'folder'}
-                className={`flex items-center gap-2 px-2 py-1.5 text-sm rounded transition-colors text-left w-full ${file.type === 'folder' ? 'text-telegram-text hover:bg-telegram-hover' : 'text-telegram-subtext cursor-not-allowed opacity-50'}`}
+                className="flex items-center gap-2 px-2 py-1.5 text-sm rounded transition-colors text-left w-full text-telegram-text hover:bg-telegram-hover"
             >
                 <Pencil className="w-4 h-4 text-purple-400" />
                 Rename

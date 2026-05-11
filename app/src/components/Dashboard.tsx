@@ -91,9 +91,22 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
         enabled: !!store,
     });
 
+    const subFolders = folders
+        .filter(f => f.parent_id === activeFolderId)
+        .map(f => ({
+            ...f,
+            size: 0, // Properties modal will load this
+            sizeStr: "Folder",
+            type: 'folder' as const,
+            created_at: '',
+            icon_type: 'folder'
+        }));
+
+    const combinedFiles = [...subFolders, ...allFiles];
+
     const displayedFiles = searchTerm.length > 2
         ? searchResults
-        : allFiles.filter((f: TelegramFile) => f.name.toLowerCase().includes(searchTerm.toLowerCase()));
+        : combinedFiles.filter((f: any) => f.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const { data: bandwidth } = useQuery({
         queryKey: ['bandwidth'],
