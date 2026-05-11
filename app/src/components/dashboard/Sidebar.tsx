@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { HardDrive, Folder, Plus, RefreshCw, LogOut, Settings, ChevronRight, ChevronDown } from 'lucide-react';
+import { HardDrive, Folder, Plus, RefreshCw, LogOut, Settings, ChevronRight, ChevronDown, Edit2, Scissors, Copy, Trash2, Info } from 'lucide-react';
 import { SidebarItem } from './SidebarItem';
+import { ContextMenu } from './ContextMenu';
 import { BandwidthWidget } from './BandwidthWidget';
 import { TelegramFolder, BandwidthStats, UserInfo } from '../../types';
 import { buildFolderTree, FolderNode } from '../../utils/treeUtils';
@@ -12,6 +13,10 @@ interface SidebarProps {
     setActiveFolderId: (id: number | null) => void;
     onDrop: (e: React.DragEvent, folderId: number | null) => void;
     onDelete: (id: number, name: string) => void;
+    onRename: (id: number, name: string) => void;
+    onCut: (id: number) => void;
+    onCopy: (id: number) => void;
+    onProperties: (id: number) => void;
     onCreate: (name: string, parentId?: number) => Promise<void>;
     onSettings: () => void;
     isSyncing: boolean;
@@ -22,19 +27,24 @@ interface SidebarProps {
 }
 
 function RecursiveTree({ 
-    nodes, activeId, setActiveId, onDrop, onDelete, onCreate, depth = 0 
+    nodes, activeId, setActiveId, onDrop, onDelete, onRename, onCut, onCopy, onProperties, onCreate, depth = 0 
 }: { 
     nodes: FolderNode[], 
     activeId: number | null, 
     setActiveId: (id: number | null) => void,
     onDrop: (e: React.DragEvent, folderId: number | null) => void,
     onDelete: (id: number, name: string) => void,
+    onRename: (id: number, name: string) => void,
+    onCut: (id: number) => void,
+    onCopy: (id: number) => void,
+    onProperties: (id: number) => void,
     onCreate: (name: string, parentId?: number) => Promise<void>,
     depth?: number 
 }) {
     const [expanded, setExpanded] = useState<Record<number, boolean>>({});
     const [showSubInput, setShowSubInput] = useState<number | null>(null);
     const [subName, setSubName] = useState("");
+    const [contextMenu, setContextMenu] = useState<{ x: number, y: number, folderId: number, folderName: string } | null>(null);
 
     const toggle = (id: number) => {
         setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
@@ -46,6 +56,10 @@ function RecursiveTree({
         setSubName("");
         setShowSubInput(null);
         setExpanded(prev => ({ ...prev, [parentId]: true }));
+    };
+
+    const handleContextMenu = (e: React.MouseEvent, folderId: number, folderName: string) => {
+        setContextMenu({ x: e.clientX, y: e.clientY, folderId, folderName });
     };
 
     return (
@@ -63,14 +77,14 @@ function RecursiveTree({
                         ) : (
                             <div className="w-5" />
                         )}
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                             <SidebarItem
                                 icon={Folder}
                                 label={node.name}
                                 active={activeId === node.id}
                                 onClick={() => setActiveId(node.id)}
                                 onDrop={(e: React.DragEvent) => onDrop(e, node.id)}
-                                onDelete={() => onDelete(node.id, node.name)}
+                                onContextMenu={(e) => handleContextMenu(e, node.id, node.name)}
                                 folderId={node.id}
                             />
                         </div>
@@ -84,7 +98,7 @@ function RecursiveTree({
                     </div>
                     
                     {showSubInput === node.id && (
-                        <div className="ml-8 mt-1 pr-2">
+                        <div className="ml-6 mt-1 pr-2">
                             <input
                                 autoFocus
                                 type="text"
@@ -99,13 +113,17 @@ function RecursiveTree({
                     )}
 
                     {node.children.length > 0 && expanded[node.id] && (
-                        <div className="ml-4 border-l border-telegram-border/50 pl-1">
+                        <div className="ml-3 border-l border-telegram-border/30 pl-1">
                             <RecursiveTree 
                                 nodes={node.children} 
                                 activeId={activeId} 
                                 setActiveId={setActiveId}
                                 onDrop={onDrop}
                                 onDelete={onDelete}
+                                onRename={onRename}
+                                onCut={onCut}
+                                onCopy={onCopy}
+                                onProperties={onProperties}
                                 onCreate={onCreate}
                                 depth={depth + 1}
                             />
@@ -113,12 +131,27 @@ function RecursiveTree({
                     )}
                 </div>
             ))}
+
+            {contextMenu && (
+                <ContextMenu
+                    x={contextMenu.x}
+                    y={contextMenu.y}
+                    onClose={() => setContextMenu(null)}
+                    options={[
+                        { label: 'Rename', icon: Edit2, onClick: () => onRename(contextMenu.folderId, contextMenu.folderName) },
+                        { label: 'Cut', icon: Scissors, onClick: () => onCut(contextMenu.folderId) },
+                        { label: 'Copy', icon: Copy, onClick: () => onCopy(contextMenu.folderId) },
+                        { label: 'Properties', icon: Info, onClick: () => onProperties(contextMenu.folderId) },
+                        { label: 'Delete', icon: Trash2, onClick: () => onDelete(contextMenu.folderId, contextMenu.folderName), variant: 'danger' },
+                    ]}
+                />
+            )}
         </div>
     );
 }
 
 export function Sidebar({
-    folders, activeFolderId, setActiveFolderId, onDrop, onDelete, onCreate,
+    folders, activeFolderId, setActiveFolderId, onDrop, onDelete, onRename, onCut, onCopy, onProperties, onCreate,
     isSyncing, isConnected, onSync, onLogout, onSettings, bandwidth, userInfo
 }: SidebarProps) {
     const [showNewFolderInput, setShowNewFolderInput] = useState(false);
@@ -129,8 +162,6 @@ export function Sidebar({
     const submitCreate = async () => {
         if (!newFolderName.trim()) return;
         try {
-            // New folders created from sidebar are root level by default
-            // Unless we add a way to specify parent
             await onCreate(newFolderName);
             setNewFolderName("");
             setShowNewFolderInput(false);
@@ -140,7 +171,7 @@ export function Sidebar({
     }
 
     return (
-        <aside className="w-64 bg-telegram-surface border-r border-telegram-border flex flex-col" onClick={e => e.stopPropagation()}>
+        <aside className="w-64 bg-telegram-surface border-r border-telegram-border flex flex-col overflow-x-hidden" onClick={e => e.stopPropagation()}>
             <div className="p-4 flex items-center gap-3">
                 <div className="relative">
                     {userInfo ? (

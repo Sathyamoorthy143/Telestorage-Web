@@ -430,6 +430,13 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                 onDrop={handleDropOnFolder}
                 onDelete={handleFolderDelete}
                 onCreate={handleCreateFolder}
+                onRename={(id, name) => handleRename(id, name, true)}
+                onCut={(id) => handleCut(id, true)}
+                onCopy={(id) => handleCopy(id, true)}
+                onProperties={(id) => {
+                    const f = folders.find(folder => folder.id === id);
+                    if (f) setPropertyFile({ ...f, type: 'folder', icon_type: 'folder' } as any);
+                }}
                 isSyncing={isSyncing}
                 isConnected={isConnected}
                 userInfo={userInfo}

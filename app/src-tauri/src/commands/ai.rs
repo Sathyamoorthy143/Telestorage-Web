@@ -31,47 +31,33 @@ struct Candidate {
 #[tauri::command]
 pub async fn cmd_gemini_chat(
     prompt: String,
-    settings: State<'_, SettingsState>,
 ) -> Result<String, String> {
-    let (api_key, theme) = {
-        let guard = settings.0.lock().unwrap();
-        (guard.gemini_api_key.clone(), guard.theme.clone())
-    };
-
-    let key = api_key.ok_or("Gemini API key not configured. Please go to Settings.")?;
-    
     let client = Client::new();
-    let url = format!(
-        "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={}",
-        key
-    );
+    let url = "http://127.0.0.1:5000/chat";
 
-    let body = GeminiRequest {
-        contents: vec![Content {
-            parts: vec![Part { text: prompt }],
-        }],
-    };
+    let body = serde_json::json!({
+        "message": prompt
+    });
 
-    let res = client.post(&url)
+    let res = client.post(url)
         .json(&body)
         .send()
         .await
-        .map_err(|e| format!("Request failed: {}", e))?;
+        .map_err(|e| format!("Proxy request failed: {}. Make sure ai_proxy.py is running.", e))?;
 
     if !res.status().is_success() {
-        let err_text = res.text().await.unwrap_or_default();
-        return Err(format!("Gemini API error: {}", err_text));
+        let err_json: serde_json::Value = res.json().await.unwrap_or_default();
+        let err_msg = err_json["error"].as_str().unwrap_or("Unknown proxy error");
+        return Err(format!("Proxy error: {}", err_msg));
     }
 
-    let resp_body: GeminiResponse = res.json()
+    let resp_body: serde_json::Value = res.json()
         .await
-        .map_err(|e| format!("Failed to parse Gemini response: {}", e))?;
+        .map_err(|e| format!("Failed to parse proxy response: {}", e))?;
 
-    let text = resp_body.candidates.get(0)
-        .ok_or("No response candidates from Gemini")?
-        .content.parts.get(0)
-        .ok_or("No text part in Gemini response")?
-        .text.clone();
+    let text = resp_body["reply"].as_str()
+        .ok_or("No reply from proxy")?
+        .to_string();
 
     Ok(text)
 }

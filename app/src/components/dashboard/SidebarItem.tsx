@@ -9,10 +9,11 @@ interface SidebarItemProps {
     onClick: () => void;
     onDrop: (e: React.DragEvent) => void;
     onDelete?: () => void;
+    onContextMenu?: (e: React.MouseEvent) => void;
     folderId: number | null;
 }
 
-export function SidebarItem({ icon: Icon, label, active = false, onClick, onDrop, onDelete }: SidebarItemProps) {
+export function SidebarItem({ icon: Icon, label, active = false, onClick, onDrop, onDelete, onContextMenu }: SidebarItemProps) {
     const [isOver, setIsOver] = useState(false);
 
     return (
@@ -33,7 +34,6 @@ export function SidebarItem({ icon: Icon, label, active = false, onClick, onDrop
             onDragLeave={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                // Only clear if truly leaving (not entering a child element)
                 const rect = e.currentTarget.getBoundingClientRect();
                 const x = e.clientX;
                 const y = e.clientY;
@@ -48,7 +48,11 @@ export function SidebarItem({ icon: Icon, label, active = false, onClick, onDrop
                 if (onDrop) onDrop(e);
             }}
             onContextMenu={(e) => {
-                if (onDelete) {
+                if (onContextMenu) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onContextMenu(e);
+                } else if (onDelete) {
                     e.preventDefault();
                     onDelete();
                 }
@@ -60,8 +64,8 @@ export function SidebarItem({ icon: Icon, label, active = false, onClick, onDrop
                     : 'text-telegram-subtext hover:bg-telegram-hover hover:text-telegram-text'
                 }`}
         >
-            <Icon className={`w-4 h-4 ${isOver ? 'text-telegram-primary' : ''}`} />
-            <span className="flex-1 text-left truncate">{label}</span>
+            <Icon className={`w-4 h-4 flex-shrink-0 ${isOver ? 'text-telegram-primary' : ''}`} />
+            <span className="flex-1 text-left truncate min-w-0">{label}</span>
             {onDelete && (
                 <div onClick={(e) => { e.stopPropagation(); onDelete(); }} className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400">
                     <Plus className="w-3 h-3 rotate-45" />
