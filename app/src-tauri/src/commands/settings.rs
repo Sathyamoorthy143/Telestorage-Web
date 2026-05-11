@@ -10,6 +10,7 @@ pub struct AppSettings {
     pub telegram_api_id: Option<i32>,
     pub theme: String,
     pub auto_login: bool,
+    pub ai_proxy_url: String,
 }
 
 impl Default for AppSettings {
@@ -19,6 +20,7 @@ impl Default for AppSettings {
             telegram_api_id: None,
             theme: "dark".to_string(),
             auto_login: true,
+            ai_proxy_url: "http://127.0.0.1:5000/chat".to_string(),
         }
     }
 }

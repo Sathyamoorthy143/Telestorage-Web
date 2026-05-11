@@ -7,6 +7,7 @@ interface AppSettings {
     gemini_api_key?: string;
     theme: string;
     auto_login: boolean;
+    ai_proxy_url: string;
 }
 
 interface SettingsModalProps {
@@ -16,7 +17,8 @@ interface SettingsModalProps {
 export function SettingsModal({ onClose }: SettingsModalProps) {
     const [settings, setSettings] = useState<AppSettings>({
         theme: 'dark',
-        auto_login: true
+        auto_login: true,
+        ai_proxy_url: 'http://127.0.0.1:5000/chat'
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -69,11 +71,12 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                 {/* Body */}
                 <div className="p-6 space-y-6">
                     {/* Gemini Section */}
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                         <div className="flex items-center gap-2 text-sm font-semibold text-telegram-text">
                             <Bot className="w-4 h-4 text-purple-400" />
                             AI Configuration (Gemini)
                         </div>
+                        
                         <div className="space-y-1">
                             <label className="text-[10px] uppercase tracking-wider text-telegram-subtext font-bold ml-1">
                                 API Key
@@ -88,8 +91,24 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                                 />
                                 <ShieldCheck className="absolute right-4 top-3.5 w-4 h-4 text-green-500/50" />
                             </div>
+                        </div>
+
+                        <div className="space-y-1">
+                            <label className="text-[10px] uppercase tracking-wider text-telegram-subtext font-bold ml-1">
+                                AI Proxy URL
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    value={settings.ai_proxy_url}
+                                    onChange={e => setSettings({ ...settings, ai_proxy_url: e.target.value })}
+                                    placeholder="http://127.0.0.1:5000/chat"
+                                    className="w-full bg-black/20 border border-telegram-border rounded-xl px-4 py-3 text-sm text-telegram-text focus:outline-none focus:ring-2 focus:ring-telegram-primary/50 transition-all placeholder:text-telegram-subtext/50"
+                                />
+                                <Power className="absolute right-4 top-3.5 w-4 h-4 text-blue-500/50" />
+                            </div>
                             <p className="text-[10px] text-telegram-subtext ml-1">
-                                Used for AI chat and file analysis. Keys are stored locally.
+                                Change to your Cloud URL (e.g. Render/Heroku) for 24/7 AI access.
                             </p>
                         </div>
                     </div>
