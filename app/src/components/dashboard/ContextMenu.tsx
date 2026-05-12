@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { Eye, HardDrive, Trash2, FolderOpen, Pencil, Play, FileText, Scissors, Copy, Clipboard, Info } from 'lucide-react';
+import { Eye, HardDrive, Trash2, FolderOpen, Pencil, Play, FileText, Scissors, Copy, Clipboard, Info, FolderInput } from 'lucide-react';
 import { TelegramFile } from '../../types';
 import { isMediaFile, isPdfFile } from '../../utils';
 
 interface ContextMenuProps {
     x: number;
     y: number;
-    file: TelegramFile;
+    file?: TelegramFile; // Optional for folder-level context
     onClose: () => void;
     onDownload: () => void;
     onDelete: () => void;
@@ -14,13 +14,15 @@ interface ContextMenuProps {
     onRename?: () => void;
     onCut?: () => void;
     onCopy?: () => void;
+    onMove?: () => void;
     onProperties?: () => void;
     canPaste?: boolean;
     onPaste?: () => void;
+    isFolderContext?: boolean;
 }
 
 export function ContextMenu({ 
-    x, y, file, onClose, onDownload, onDelete, onPreview, onRename, onCut, onCopy, canPaste, onPaste, onProperties 
+    x, y, file, onClose, onDownload, onDelete, onPreview, onRename, onCut, onCopy, onMove, canPaste, onPaste, onProperties, isFolderContext 
 }: ContextMenuProps) {
     const [adjustedPos, setAdjustedPos] = useState({ x, y });
     const menuRef = useRef<HTMLDivElement>(null);
@@ -49,7 +51,7 @@ export function ContextMenu({
 
         window.addEventListener('click', handleClick);
         window.addEventListener('resize', handleResize);
-        window.addEventListener('contextmenu', handleClick); // Close if right click elsewhere
+        window.addEventListener('contextmenu', handleClick);
 
         return () => {
             window.removeEventListener('click', handleClick);
@@ -67,10 +69,10 @@ export function ContextMenu({
             onContextMenu={(e) => e.preventDefault()}
         >
             <div className="px-2 py-1.5 text-xs text-telegram-subtext font-medium truncate max-w-[180px] border-b border-telegram-border mb-1">
-                {file.name}
+                {file ? file.name : (isFolderContext ? 'Folder Options' : 'Options')}
             </div>
 
-            {file.type !== 'folder' && (
+            {file && file.type !== 'folder' && (
                 <button onClick={onPreview} className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full">
                     {isMediaFile(file.name) ? (
                         <>
@@ -91,29 +93,40 @@ export function ContextMenu({
                 </button>
             )}
 
-            {file.type === 'folder' && (
+            {file && file.type === 'folder' && (
                 <button onClick={onPreview} className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full">
                     <FolderOpen className="w-4 h-4 text-yellow-500" />
                     Open
                 </button>
             )}
 
-            <button onClick={onDownload} className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full">
-                <HardDrive className="w-4 h-4 text-green-500" />
-                Download
-            </button>
+            {file && (
+                <button onClick={onDownload} className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full">
+                    <HardDrive className="w-4 h-4 text-green-500" />
+                    Download
+                </button>
+            )}
 
-            <div className="h-px bg-telegram-border my-1" />
+            {!isFolderContext && <div className="h-px bg-telegram-border my-1" />}
 
-            <button onClick={onCut} className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full">
-                <Scissors className="w-4 h-4 text-orange-400" />
-                Cut
-            </button>
+            {file && (
+                <>
+                    <button onClick={onCut} className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full">
+                        <Scissors className="w-4 h-4 text-orange-400" />
+                        Cut
+                    </button>
 
-            <button onClick={onCopy} className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full">
-                <Copy className="w-4 h-4 text-blue-400" />
-                Copy
-            </button>
+                    <button onClick={onCopy} className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full">
+                        <Copy className="w-4 h-4 text-blue-400" />
+                        Copy
+                    </button>
+
+                    <button onClick={onMove} className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full">
+                        <FolderInput className="w-4 h-4 text-cyan-400" />
+                        Move to Folder
+                    </button>
+                </>
+            )}
 
             {canPaste && (
                 <button onClick={onPaste} className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full">
@@ -122,13 +135,15 @@ export function ContextMenu({
                 </button>
             )}
 
-            <button 
-                onClick={onRename} 
-                className="flex items-center gap-2 px-2 py-1.5 text-sm rounded transition-colors text-left w-full text-telegram-text hover:bg-telegram-hover"
-            >
-                <Pencil className="w-4 h-4 text-purple-400" />
-                Rename
-            </button>
+            {file && (
+                <button 
+                    onClick={onRename} 
+                    className="flex items-center gap-2 px-2 py-1.5 text-sm rounded transition-colors text-left w-full text-telegram-text hover:bg-telegram-hover"
+                >
+                    <Pencil className="w-4 h-4 text-purple-400" />
+                    Rename
+                </button>
+            )}
 
             <button 
                 onClick={() => onProperties?.()} 
@@ -138,12 +153,18 @@ export function ContextMenu({
                 Properties
             </button>
 
-            <div className="h-px bg-telegram-border my-1" />
-
-            <button onClick={onDelete} className="flex items-center gap-2 px-2 py-1.5 text-sm text-red-500 hover:bg-red-500/10 rounded transition-colors text-left w-full">
-                <Trash2 className="w-4 h-4" />
-                Delete
-            </button>
+            {file && (
+                <>
+                    <div className="h-px bg-telegram-border my-1" />
+                    <button onClick={onDelete} className="flex items-center gap-2 px-2 py-1.5 text-sm text-red-500 hover:bg-red-500/10 rounded transition-colors text-left w-full">
+                        <Trash2 className="w-4 h-4" />
+                        Delete
+                    </button>
+                </>
+            )}
+        </div>
+    );
+}
         </div>
     );
 }

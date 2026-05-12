@@ -1,7 +1,7 @@
 import {
     File, FileText, FileImage, FileVideo, FileAudio,
     FileArchive, FileCode, FileSpreadsheet, Presentation,
-    FileType
+    FileType, Cpu, Terminal, Disc
 } from 'lucide-react';
 
 const extensionMap: Record<string, { icon: typeof File; color: string }> = {
@@ -14,6 +14,7 @@ const extensionMap: Record<string, { icon: typeof File; color: string }> = {
     svg: { icon: FileImage, color: 'text-pink-400' },
     bmp: { icon: FileImage, color: 'text-pink-400' },
     heic: { icon: FileImage, color: 'text-pink-400' },
+    ico: { icon: FileImage, color: 'text-yellow-500' },
 
     // Videos
     mp4: { icon: FileVideo, color: 'text-purple-400' },
@@ -28,6 +29,7 @@ const extensionMap: Record<string, { icon: typeof File; color: string }> = {
     flac: { icon: FileAudio, color: 'text-green-400' },
     aac: { icon: FileAudio, color: 'text-green-400' },
     ogg: { icon: FileAudio, color: 'text-green-400' },
+    m4a: { icon: FileAudio, color: 'text-green-400' },
 
     // Documents
     pdf: { icon: FileType, color: 'text-red-400' },
@@ -53,8 +55,10 @@ const extensionMap: Record<string, { icon: typeof File; color: string }> = {
     '7z': { icon: FileArchive, color: 'text-yellow-400' },
     tar: { icon: FileArchive, color: 'text-yellow-400' },
     gz: { icon: FileArchive, color: 'text-yellow-400' },
+    iso: { icon: Disc, color: 'text-blue-300' },
+    dmg: { icon: Disc, color: 'text-gray-300' },
 
-    // Code
+    // Code & Scripts
     js: { icon: FileCode, color: 'text-yellow-300' },
     ts: { icon: FileCode, color: 'text-blue-300' },
     jsx: { icon: FileCode, color: 'text-cyan-300' },
@@ -66,6 +70,17 @@ const extensionMap: Record<string, { icon: typeof File; color: string }> = {
     html: { icon: FileCode, color: 'text-orange-400' },
     css: { icon: FileCode, color: 'text-blue-400' },
     json: { icon: FileCode, color: 'text-yellow-200' },
+    sh: { icon: Terminal, color: 'text-green-400' },
+    bat: { icon: Terminal, color: 'text-blue-400' },
+
+    // Executables
+    exe: { icon: Cpu, color: 'text-indigo-400' },
+    msi: { icon: Cpu, color: 'text-indigo-400' },
+    apk: { icon: Cpu, color: 'text-green-500' },
+    app: { icon: Cpu, color: 'text-gray-200' },
+    pkg: { icon: Cpu, color: 'text-purple-300' },
+    sdk: { icon: Cpu, color: 'text-amber-400' },
+    bin: { icon: Cpu, color: 'text-gray-500' },
 };
 
 export function getFileTypeInfo(filename: string): { icon: typeof File; color: string } {

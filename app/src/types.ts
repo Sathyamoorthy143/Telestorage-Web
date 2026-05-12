@@ -61,3 +61,10 @@ export interface FolderMetadata {
 
 export type i64 = number;
 export type bool = boolean;
+
+export interface Clipboard {
+    type: 'cut' | 'copy';
+    messageIds: number[];
+    folderIds: number[];
+    sourceFolderId: number | null;
+}

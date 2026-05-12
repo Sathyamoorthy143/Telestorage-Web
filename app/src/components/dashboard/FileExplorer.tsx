@@ -32,9 +32,10 @@ interface FileExplorerProps {
     onRename: (id: number, currentName: string, isFolder: boolean) => void;
     onCut: (ids: number[]) => void;
     onCopy: (ids: number[]) => void;
+    onMove: () => void;
     onPaste: () => void;
     canPaste: boolean;
-    onProperties: (file: TelegramFile) => void;
+    onProperties: (file?: TelegramFile) => void;
 }
 
 
@@ -67,11 +68,11 @@ function useGridColumns(containerRef: React.RefObject<HTMLDivElement | null>) {
 export function FileExplorer({
     files, loading, error, viewMode, selectedIds, activeFolderId,
     onFileClick, onDelete, onDownload, onPreview, onManualUpload, onFolderUpload, onSelectionClear, onToggleSelection, onDrop, onDragStart, onDragEnd,
-    onRename, onCut, onCopy, onPaste, canPaste, onProperties
+    onRename, onCut, onCopy, onMove, onPaste, canPaste, onProperties
 }: FileExplorerProps) {
     const [sortField, setSortField] = useState<SortField>('name');
     const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-    const [contextMenu, setContextMenu] = useState<{ x: number; y: number; file: TelegramFile } | null>(null);
+    const [contextMenu, setContextMenu] = useState<{ x: number; y: number; file?: TelegramFile; isFolder?: boolean } | null>(null);
 
     const parentRef = useRef<HTMLDivElement>(null);
     const { columns, containerWidth } = useGridColumns(parentRef);
@@ -85,6 +86,11 @@ export function FileExplorer({
         e.preventDefault();
         e.stopPropagation();
         setContextMenu({ x: e.clientX, y: e.clientY, file });
+    }, []);
+
+    const handleRootContextMenu = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        setContextMenu({ x: e.clientX, y: e.clientY, isFolder: true });
     }, []);
 
     const sortedFiles = useMemo(() => {
@@ -189,6 +195,7 @@ export function FileExplorer({
             onClick={(e) => {
                 if (e.target === e.currentTarget) onSelectionClear();
             }}
+            onContextMenu={handleRootContextMenu}
         >
             {viewMode === 'grid' ? (
                 <>
@@ -373,35 +380,57 @@ export function FileExplorer({
                     x={contextMenu.x}
                     y={contextMenu.y}
                     file={contextMenu.file}
+                    isFolderContext={contextMenu.isFolder}
                     onClose={() => setContextMenu(null)}
                     onDownload={() => {
-                        onDownload(contextMenu.file.id, contextMenu.file.name, contextMenu.file.size);
+                        if (contextMenu.file) {
+                            onDownload(contextMenu.file.id, contextMenu.file.name, contextMenu.file.size);
+                        }
                         setContextMenu(null);
                     }}
                     onDelete={() => {
-                        onDelete(contextMenu.file.id);
+                        if (contextMenu.file) {
+                            onDelete(contextMenu.file.id);
+                        }
                         setContextMenu(null);
                     }}
                     onPreview={() => {
-                        if (contextMenu.file.type === 'folder') {
-                            onFileClick({ preventDefault: () => { }, stopPropagation: () => { } } as React.MouseEvent, contextMenu.file.id);
-                        } else {
-                            handlePreviewRequest(contextMenu.file);
+                        if (contextMenu.file) {
+                            if (contextMenu.file.type === 'folder') {
+                                onFileClick({ preventDefault: () => { }, stopPropagation: () => { } } as React.MouseEvent, contextMenu.file.id);
+                            } else {
+                                handlePreviewRequest(contextMenu.file);
+                            }
                         }
                         setContextMenu(null);
                     }}
                     onRename={() => {
-                        onRename(contextMenu.file.id, contextMenu.file.name, contextMenu.file.type === 'folder');
+                        if (contextMenu.file) {
+                            onRename(contextMenu.file.id, contextMenu.file.name, contextMenu.file.type === 'folder');
+                        }
                         setContextMenu(null);
                     }}
                     onCut={() => {
-                        const ids = selectedIds.includes(contextMenu.file.id) ? selectedIds : [contextMenu.file.id];
-                        onCut(ids);
+                        if (contextMenu.file) {
+                            const ids = selectedIds.includes(contextMenu.file.id) ? selectedIds : [contextMenu.file.id];
+                            onCut(ids);
+                        }
                         setContextMenu(null);
                     }}
                     onCopy={() => {
-                        const ids = selectedIds.includes(contextMenu.file.id) ? selectedIds : [contextMenu.file.id];
-                        onCopy(ids);
+                        if (contextMenu.file) {
+                            const ids = selectedIds.includes(contextMenu.file.id) ? selectedIds : [contextMenu.file.id];
+                            onCopy(ids);
+                        }
+                        setContextMenu(null);
+                    }}
+                    onMove={() => {
+                        if (contextMenu.file) {
+                            if (!selectedIds.includes(contextMenu.file.id)) {
+                                onToggleSelection(contextMenu.file.id);
+                            }
+                        }
+                        onMove();
                         setContextMenu(null);
                     }}
                     canPaste={canPaste}

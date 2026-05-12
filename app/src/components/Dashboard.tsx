@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { invoke } from '@tauri-apps/api/core';
 import { toast } from 'sonner';
 
-import { TelegramFile, BandwidthStats } from '../types';
+import { TelegramFile, BandwidthStats, Clipboard } from '../types';
 import { formatBytes, isMediaFile, isPdfFile } from '../utils';
 
 // Components
@@ -63,7 +63,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     const [pdfFile, setPdfFile] = useState<TelegramFile | null>(null);
     const [previewContextFiles, setPreviewContextFiles] = useState<TelegramFile[]>([]);
     const [previewContextIndex, setPreviewContextIndex] = useState(-1);
-    const [clipboard, setClipboard] = useState<{ type: 'cut' | 'copy'; ids: number[]; sourceFolderId: number | null } | null>(null);
+    const [clipboard, setClipboard] = useState<Clipboard | null>(null);
     const [propertyFile, setPropertyFile] = useState<TelegramFile | null>(null);
 
     useEffect(() => {
@@ -433,9 +433,20 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                 onRename={(id, name) => handleRename(id, name, true)}
                 onCut={(id) => handleCut([id])}
                 onCopy={(id) => handleCopy([id])}
+                onPaste={handlePaste}
+                canPaste={!!clipboard}
                 onProperties={(id) => {
-                    const f = folders.find(folder => folder.id === id);
-                    if (f) setPropertyFile({ ...f, type: 'folder', icon_type: 'folder' } as any);
+                    if (id === null) {
+                        setPropertyFile({
+                            id: 0,
+                            name: "Saved Messages",
+                            type: 'folder',
+                            icon_type: 'folder'
+                        } as any);
+                    } else {
+                        const f = folders.find(folder => folder.id === id);
+                        if (f) setPropertyFile({ ...f, type: 'folder', icon_type: 'folder' } as any);
+                    }
                 }}
                 isSyncing={isSyncing}
                 isConnected={isConnected}
@@ -507,9 +518,22 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     onRename={handleRename}
                     onCut={handleCut}
                     onCopy={handleCopy}
+                    onMove={() => setShowMoveModal(true)}
                     onPaste={handlePaste}
                     canPaste={!!clipboard}
-                    onProperties={setPropertyFile}
+                    onProperties={(file) => {
+                        if (!file) {
+                            // Properties for the current folder
+                            setPropertyFile({
+                                id: activeFolderId || 0,
+                                name: currentFolderName,
+                                type: 'folder',
+                                icon_type: 'folder'
+                            } as any);
+                        } else {
+                            setPropertyFile(file);
+                        }
+                    }}
                 />
             </main>
 

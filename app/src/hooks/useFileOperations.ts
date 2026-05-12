@@ -2,15 +2,15 @@ import { invoke } from '@tauri-apps/api/core';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useConfirm } from '../context/ConfirmContext';
-import { TelegramFile } from '../types';
+import { TelegramFile, Clipboard } from '../types';
 
 export function useFileOperations(
     activeFolderId: number | null,
     selectedIds: number[],
     setSelectedIds: (ids: number[]) => void,
     displayedFiles: TelegramFile[],
-    clipboard: { type: 'cut' | 'copy'; ids: number[]; sourceFolderId: number | null } | null,
-    setClipboard: (val: { type: 'cut' | 'copy'; ids: number[]; sourceFolderId: number | null } | null) => void
+    clipboard: Clipboard | null,
+    setClipboard: (val: Clipboard | null) => void
 ) {
     const queryClient = useQueryClient();
     const { confirm } = useConfirm();
@@ -165,47 +165,47 @@ export function useFileOperations(
 
     const handleCut = (ids: number[]) => {
         const selectedFiles = displayedFiles.filter(f => ids.includes(f.id));
-        const fileIds = selectedFiles.filter(f => f.type !== 'folder').map(f => f.id);
+        const messageIds = selectedFiles.filter(f => f.type !== 'folder').map(f => f.id);
         const folderIds = selectedFiles.filter(f => f.type === 'folder').map(f => f.id);
         
         setClipboard({ 
             type: 'cut', 
-            ids: fileIds, 
-            folderIds, // Add this to the type below if needed, or handle it here
+            messageIds, 
+            folderIds,
             sourceFolderId: activeFolderId 
-        } as any);
+        });
         toast.info(`Cut ${ids.length} items to clipboard.`);
     };
 
     const handleCopy = (ids: number[]) => {
         const selectedFiles = displayedFiles.filter(f => ids.includes(f.id));
-        const fileIds = selectedFiles.filter(f => f.type !== 'folder').map(f => f.id);
+        const messageIds = selectedFiles.filter(f => f.type !== 'folder').map(f => f.id);
         const folderIds = selectedFiles.filter(f => f.type === 'folder').map(f => f.id);
 
         setClipboard({ 
             type: 'copy', 
-            ids: fileIds, 
+            messageIds, 
             folderIds,
             sourceFolderId: activeFolderId 
-        } as any);
+        });
         toast.info(`Copied ${ids.length} items to clipboard.`);
     };
 
-    const handlePaste = async () => {
+    const handlePaste = async (targetFolderId: number | null = activeFolderId) => {
         if (!clipboard) return;
-        const cb = clipboard as any;
         try {
-            const command = cb.type === 'cut' ? 'cmd_move_files' : 'cmd_copy_files';
+            const command = clipboard.type === 'cut' ? 'cmd_move_files' : 'cmd_copy_files';
             await invoke(command, {
-                messageIds: cb.ids || [],
-                folderIds: cb.folderIds || [],
-                sourceFolderId: cb.sourceFolderId,
-                targetFolderId: activeFolderId
+                messageIds: clipboard.messageIds || [],
+                folderIds: clipboard.folderIds || [],
+                sourceFolderId: clipboard.sourceFolderId,
+                targetFolderId: targetFolderId
             });
-            toast.success(`${cb.type === 'cut' ? 'Moved' : 'Copied'} ${ (cb.ids?.length || 0) + (cb.folderIds?.length || 0) } items.`);
-            queryClient.invalidateQueries({ queryKey: ['files', activeFolderId] });
+            const total = (clipboard.messageIds?.length || 0) + (clipboard.folderIds?.length || 0);
+            toast.success(`${clipboard.type === 'cut' ? 'Moved' : 'Copied'} ${total} items.`);
+            queryClient.invalidateQueries({ queryKey: ['files', targetFolderId] });
             queryClient.invalidateQueries({ queryKey: ['folders'] });
-            if (cb.type === 'cut') setClipboard(null);
+            if (clipboard.type === 'cut') setClipboard(null);
         } catch (e) {
             toast.error(`Paste failed: ${e}`);
         }

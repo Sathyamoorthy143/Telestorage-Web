@@ -569,7 +569,7 @@ pub async fn cmd_copy_files(
 
 #[tauri::command]
 pub async fn cmd_get_folder_properties(
-    folder_id: i64,
+    folder_id: Option<i64>,
     state: State<'_, TelegramState>,
 ) -> Result<serde_json::Value, String> {
     let client_opt = { state.client.lock().await.clone() };
@@ -581,7 +581,7 @@ pub async fn cmd_get_folder_properties(
         }));
     }
     let client = client_opt.unwrap();
-    let peer = resolve_peer(&client, Some(folder_id), &state.peer_cache).await?;
+    let peer = resolve_peer(&client, folder_id, &state.peer_cache).await?;
     
     let mut count = 0;
     let mut total_size: u64 = 0;

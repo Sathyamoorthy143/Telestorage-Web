@@ -15,7 +15,9 @@ interface SidebarProps {
     onRename: (id: number, name: string) => void;
     onCut: (id: number) => void;
     onCopy: (id: number) => void;
-    onProperties: (id: number) => void;
+    onPaste: (targetFolderId: number | null) => void;
+    canPaste: boolean;
+    onProperties: (id: number | null) => void;
     onCreate: (name: string, parentId?: number) => Promise<void>;
     onSettings: () => void;
     isSyncing: boolean;
@@ -162,11 +164,12 @@ function RecursiveTree({
 }
 
 export function Sidebar({
-    folders, activeFolderId, setActiveFolderId, onDrop, onDelete, onRename, onCut, onCopy, onProperties, onCreate,
+    folders, activeFolderId, setActiveFolderId, onDrop, onDelete, onRename, onCut, onCopy, onPaste, canPaste, onProperties, onCreate,
     isSyncing, isConnected, onSync, onLogout, onSettings, bandwidth, userInfo
 }: SidebarProps) {
     const [showNewFolderInput, setShowNewFolderInput] = useState(false);
     const [newFolderName, setNewFolderName] = useState("");
+    const [rootContextMenu, setRootContextMenu] = useState<{ x: number, y: number } | null>(null);
 
     const folderTree = buildFolderTree(folders);
 
@@ -180,6 +183,11 @@ export function Sidebar({
             // handled by parent
         }
     }
+
+    const handleRootContextMenu = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setRootContextMenu({ x: e.clientX, y: e.clientY });
+    };
 
     return (
         <aside className="w-64 bg-telegram-surface border-r border-telegram-border flex flex-col overflow-x-hidden" onClick={e => e.stopPropagation()}>
@@ -204,7 +212,6 @@ export function Sidebar({
                 </div>
             </div>
 
-            {/* Scrollable folder list */}
             <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto min-h-0">
                 <SidebarItem
                     icon={HardDrive}
@@ -212,8 +219,27 @@ export function Sidebar({
                     active={activeFolderId === null}
                     onClick={() => setActiveFolderId(null)}
                     onDrop={(e: React.DragEvent) => onDrop(e, null)}
+                    onContextMenu={handleRootContextMenu}
                     folderId={null}
                 />
+
+                {rootContextMenu && (
+                    <div 
+                        className="fixed z-50 min-w-[160px] bg-telegram-surface/95 backdrop-blur-xl border border-telegram-border rounded-lg shadow-2xl p-1.5 animate-in fade-in zoom-in-95 duration-100 flex flex-col gap-0.5"
+                        style={{ left: rootContextMenu.x, top: rootContextMenu.y }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {canPaste && (
+                            <button onClick={() => { onPaste(null); setRootContextMenu(null); }} className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full">
+                                <Clipboard className="w-4 h-4 text-green-400" /> Paste
+                            </button>
+                        )}
+                        <button onClick={() => { onProperties(null); setRootContextMenu(null); }} className="flex items-center gap-2 px-2 py-1.5 text-sm text-telegram-text hover:bg-telegram-hover rounded transition-colors text-left w-full">
+                            <Info className="w-4 h-4 text-blue-300" /> Properties
+                        </button>
+                        <div className="fixed inset-0 -z-10" onClick={() => setRootContextMenu(null)} onContextMenu={(e) => { e.preventDefault(); setRootContextMenu(null); }} />
+                    </div>
+                )}
                 
                 <RecursiveTree 
                     nodes={folderTree} 
