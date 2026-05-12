@@ -128,7 +128,7 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
     const {
         handleDelete, handleBulkDelete, handleBulkDownload,
-        handleBulkMove, handleDownloadFolder, handleGlobalSearch,
+        handleBulkMove, handleGlobalSearch,
         handleRename, handleCut, handleCopy, handlePaste
 
     } = useFileOperations(activeFolderId, selectedIds, setSelectedIds, displayedFiles, clipboard, setClipboard);
@@ -498,7 +498,10 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     onBulkDelete={handleBulkDelete}
                     onManualUpload={handleManualUpload}
                     onFolderUpload={handleFolderUpload}
-                    onCreateFolder={() => handleCreateFolder()}
+                    onCreateFolder={async () => {
+                        const name = window.prompt("Enter folder name:");
+                        if (name) await handleCreateFolder(name, activeFolderId || undefined);
+                    }}
                     onPaste={handlePaste}
                     canPaste={!!clipboard}
                     viewSettings={viewSettings}

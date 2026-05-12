@@ -28,7 +28,7 @@ interface SidebarProps {
 }
 
 function RecursiveTree({ 
-    nodes, activeId, setActiveId, onDrop, onDelete, onRename, onCut, onCopy, onProperties, onCreate, depth = 0 
+    nodes, activeId, setActiveId, onDrop, onDelete, onRename, onCut, onCopy, onPaste, canPaste, onProperties, onCreate, depth = 0 
 }: { 
     nodes: FolderNode[], 
     activeId: number | null, 
@@ -38,6 +38,8 @@ function RecursiveTree({
     onRename: (id: number, name: string) => void,
     onCut: (id: number) => void,
     onCopy: (id: number) => void,
+    onPaste: (targetFolderId: number | null) => void,
+    canPaste: boolean,
     onProperties: (id: number) => void,
     onCreate: (name: string, parentId?: number) => Promise<void>,
     depth?: number 
@@ -124,6 +126,8 @@ function RecursiveTree({
                                 onRename={onRename}
                                 onCut={onCut}
                                 onCopy={onCopy}
+                                onPaste={onPaste}
+                                canPaste={canPaste}
                                 onProperties={onProperties}
                                 onCreate={onCreate}
                                 depth={depth + 1}
@@ -255,6 +259,8 @@ export function Sidebar({
                     onRename={onRename}
                     onCut={onCut}
                     onCopy={onCopy}
+                    onPaste={onPaste}
+                    canPaste={canPaste}
                     onProperties={onProperties}
                     onCreate={onCreate}
                 />
