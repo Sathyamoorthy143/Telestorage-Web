@@ -165,7 +165,4 @@ export function ContextMenu({
         </div>
     );
 }
-        </div>
-    );
-}
 
