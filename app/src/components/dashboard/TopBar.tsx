@@ -1,7 +1,7 @@
 import { 
     HardDrive, Sun, Moon, ChevronDown, 
     SlidersHorizontal, PanelRightClose, PanelRightOpen, FilePlus, 
-    FolderPlus, ArrowUpDown, Check, List, Grid2X2, LayoutList, Search,
+    FolderPlus, ArrowUpDown, Check, List, Grid2X2, Search,
     Clipboard
 } from 'lucide-react';
 import { useState } from 'react';
