@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { motion, AnimatePresence } from "framer-motion";
-import { Phone, Key, Lock, ArrowRight, Settings, ShieldCheck, Sun, Moon, HelpCircle, ExternalLink, X, Heart } from "lucide-react";
+import { Phone, Key, Lock, ArrowRight, Settings, ShieldCheck, Sun, Moon, HelpCircle, ExternalLink, X, Heart, Eye, EyeOff } from "lucide-react";
 import { load } from '@tauri-apps/plugin-store';
 import { useTheme } from '../context/ThemeContext';
 import { open } from '@tauri-apps/plugin-shell';
@@ -50,6 +50,8 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
 
     const [apiId, setApiId] = useState("");
     const [apiHash, setApiHash] = useState("");
+    const [showApiId, setShowApiId] = useState(false);
+    const [showApiHash, setShowApiHash] = useState(false);
 
     const [phone, setPhone] = useState("");
     const [code, setCode] = useState("");
@@ -248,12 +250,19 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                                             <div className="relative">
                                                 <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 auth-form-icon" />
                                                 <input
-                                                    type="text"
+                                                    type={showApiId ? "text" : "password"}
                                                     value={apiId}
                                                     onChange={(e) => setApiId(e.target.value)}
                                                     placeholder="12345678"
-                                                    className="w-full glass-input rounded-xl pl-12 pr-4 py-3.5 text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 transition-all font-mono text-sm"
+                                                    className="w-full glass-input rounded-xl pl-12 pr-12 py-3.5 text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 transition-all font-mono text-sm"
                                                 />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowApiId(!showApiId)}
+                                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                                                >
+                                                    {showApiId ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                </button>
                                             </div>
                                         </div>
                                         <div>
@@ -261,12 +270,19 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
                                             <div className="relative">
                                                 <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 auth-form-icon" />
                                                 <input
-                                                    type="text"
+                                                    type={showApiHash ? "text" : "password"}
                                                     value={apiHash}
                                                     onChange={(e) => setApiHash(e.target.value)}
                                                     placeholder="abcdef123456..."
-                                                    className="w-full glass-input rounded-xl pl-12 pr-4 py-3.5 text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 transition-all font-mono text-sm"
+                                                    className="w-full glass-input rounded-xl pl-12 pr-12 py-3.5 text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 transition-all font-mono text-sm"
                                                 />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowApiHash(!showApiHash)}
+                                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                                                >
+                                                    {showApiHash ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
