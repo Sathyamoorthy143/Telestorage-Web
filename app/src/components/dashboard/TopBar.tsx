@@ -2,7 +2,7 @@ import {
     HardDrive, Sun, Moon, ChevronDown, 
     SlidersHorizontal, PanelRightClose, PanelRightOpen, FilePlus, 
     FolderPlus, ArrowUpDown, Check, List, Grid2X2, Search,
-    Clipboard
+    Clipboard, Scissors, Copy
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
@@ -17,6 +17,8 @@ interface TopBarProps {
     onFolderUpload: () => void;
     onCreateFolder: () => void;
     onPaste: () => void;
+    onCut: (ids: number[]) => void;
+    onCopy: (ids: number[]) => void;
     canPaste: boolean;
     viewSettings: ViewSettings;
     onUpdateViewSettings: (settings: Partial<ViewSettings>) => void;
@@ -26,7 +28,7 @@ interface TopBarProps {
 
 export function TopBar({
     selectedIds, onShowMoveModal, onBulkDownload, onBulkDelete,
-    onManualUpload, onFolderUpload, onCreateFolder, onPaste, canPaste, 
+    onManualUpload, onFolderUpload, onCreateFolder, onPaste, onCut, onCopy, canPaste, 
     viewSettings, onUpdateViewSettings, searchTerm, onSearchChange
 }: TopBarProps) {
     const { theme, toggleTheme } = useTheme();
@@ -78,6 +80,14 @@ export function TopBar({
                     
                     {selectedIds.length > 0 && (
                         <>
+                            <button onClick={() => onCopy(selectedIds)} className="flex items-center gap-1.5 px-2.5 py-1.5 hover:bg-telegram-hover rounded-md text-blue-400 transition text-sm" title="Copy Selected">
+                                <Copy className="w-4 h-4" />
+                                <span>Copy</span>
+                            </button>
+                            <button onClick={() => onCut(selectedIds)} className="flex items-center gap-1.5 px-2.5 py-1.5 hover:bg-telegram-hover rounded-md text-orange-400 transition text-sm" title="Cut Selected">
+                                <Scissors className="w-4 h-4" />
+                                <span>Cut</span>
+                            </button>
                             <button onClick={onBulkDownload} className="flex items-center gap-1.5 px-2.5 py-1.5 hover:bg-telegram-hover rounded-md text-telegram-text transition text-sm" title="Download Selected">
                                 <HardDrive className="w-4 h-4" />
                                 <span>Download</span>

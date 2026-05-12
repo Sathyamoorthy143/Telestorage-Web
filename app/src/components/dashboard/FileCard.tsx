@@ -19,6 +19,7 @@ interface FileCardProps {
     activeFolderId?: number | null;
     height?: number;
     onToggleSelection?: () => void;
+    onDoubleClick?: () => void;
 }
 
 // Check if file is an image type that can have a thumbnail
@@ -27,7 +28,7 @@ function isImageFile(filename: string): boolean {
     return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext);
 }
 
-export function FileCard({ file, onDelete, onDownload, onPreview, isSelected, onClick, onContextMenu, onDrop, onDragStart, onDragEnd, activeFolderId, height, onToggleSelection }: FileCardProps) {
+export function FileCard({ file, onDelete, onDownload, onPreview, isSelected, onClick, onContextMenu, onDrop, onDragStart, onDragEnd, activeFolderId, height, onToggleSelection, onDoubleClick }: FileCardProps) {
     const isFolder = file.type === 'folder';
     const [isDragOver, setIsDragOver] = useState(false);
     const [thumbnail, setThumbnail] = useState<string | null>(null);
@@ -61,6 +62,10 @@ export function FileCard({ file, onDelete, onDownload, onPreview, isSelected, on
             className="relative"
             onContextMenu={onContextMenu}
             onClick={onClick}
+            onDoubleClick={(e) => {
+                e.stopPropagation();
+                if (onDoubleClick) onDoubleClick();
+            }}
             onDragOver={(e) => {
                 if (isFolder) {
                     e.preventDefault();

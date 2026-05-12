@@ -508,7 +508,9 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                         const name = window.prompt("Enter folder name:");
                         if (name) await handleCreateFolder(name, activeFolderId || undefined);
                     }}
-                    onPaste={handlePaste}
+                    onPaste={() => handlePaste()}
+                    onCut={handleCut}
+                    onCopy={handleCopy}
                     canPaste={!!clipboard}
                     viewSettings={viewSettings}
                     onUpdateViewSettings={onUpdateViewSettings}
@@ -546,8 +548,9 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     onCut={handleCut}
                     onCopy={handleCopy}
                     onMove={() => setShowMoveModal(true)}
-                    onPaste={handlePaste}
+                    onPaste={() => handlePaste()}
                     canPaste={!!clipboard}
+                    onOpenFolder={(id) => setActiveFolderId(id)}
                     onProperties={(file) => {
                         if (!file) {
                             // Properties for the current folder

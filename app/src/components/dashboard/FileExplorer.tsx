@@ -34,6 +34,7 @@ interface FileExplorerProps {
     onPaste: () => void;
     canPaste: boolean;
     onProperties: (file?: TelegramFile) => void;
+    onOpenFolder?: (folderId: number) => void;
 }
 
 function useGridColumns(containerRef: React.RefObject<HTMLDivElement | null>) {
@@ -211,6 +212,7 @@ export function FileExplorer({
                                         activeFolderId={activeFolderId}
                                         height={cardHeight}
                                         onToggleSelection={() => onToggleSelection(file.id)}
+                                        onDoubleClick={file.type === 'folder' ? () => onOpenFolder?.(file.id) : () => handlePreviewRequest(file)}
                                     />
                                 ))}
                             </div>
