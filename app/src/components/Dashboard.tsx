@@ -468,6 +468,8 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                 onSync={handleSyncFolders}
                 onLogout={handleLogout}
                 onSettings={() => setShowSettingsModal(true)}
+                onPaste={handlePaste}
+                canPaste={!!clipboard}
                 bandwidth={bandwidth || null}
             />
             

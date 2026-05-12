@@ -96,10 +96,10 @@ export function TopBar({
                 <div className="relative">
                     <button 
                         onClick={(e) => { e.stopPropagation(); toggleDropdown('sort'); }}
-                        className="flex items-center gap-2 px-3 py-1.5 hover:bg-telegram-hover rounded-md text-sm font-medium transition-colors"
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${activeDropdown === 'sort' ? 'bg-telegram-hover text-telegram-primary' : 'hover:bg-telegram-hover text-telegram-text'}`}
                     >
                         <ArrowUpDown className="w-4 h-4" />
-                        <span>Sort</span>
+                        <span className="capitalize">{viewSettings.sortField}</span>
                         <ChevronDown className={`w-3 h-3 transition-transform ${activeDropdown === 'sort' ? 'rotate-180' : ''}`} />
                     </button>
                     {activeDropdown === 'sort' && (
@@ -107,8 +107,8 @@ export function TopBar({
                             {(['name', 'date', 'type', 'size'] as SortField[]).map(field => (
                                 <button 
                                     key={field}
-                                    onClick={() => onUpdateViewSettings({ sortField: field })}
-                                    className="flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-telegram-hover rounded-md transition-colors capitalize"
+                                    onClick={() => { onUpdateViewSettings({ sortField: field }); setActiveDropdown(null); }}
+                                    className="flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-telegram-hover rounded-md transition-colors capitalize text-telegram-text"
                                 >
                                     {field}
                                     {viewSettings.sortField === field && <Check className="w-3 h-3 text-telegram-primary" />}
@@ -116,15 +116,15 @@ export function TopBar({
                             ))}
                             <div className="h-px bg-telegram-border my-1"></div>
                             <button 
-                                onClick={() => onUpdateViewSettings({ sortDirection: 'asc' })}
-                                className="flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-telegram-hover rounded-md transition-colors"
+                                onClick={() => { onUpdateViewSettings({ sortDirection: 'asc' }); setActiveDropdown(null); }}
+                                className="flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-telegram-hover rounded-md transition-colors text-telegram-text"
                             >
                                 Ascending
                                 {viewSettings.sortDirection === 'asc' && <Check className="w-3 h-3 text-telegram-primary" />}
                             </button>
                             <button 
-                                onClick={() => onUpdateViewSettings({ sortDirection: 'desc' })}
-                                className="flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-telegram-hover rounded-md transition-colors"
+                                onClick={() => { onUpdateViewSettings({ sortDirection: 'desc' }); setActiveDropdown(null); }}
+                                className="flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-telegram-hover rounded-md transition-colors text-telegram-text"
                             >
                                 Descending
                                 {viewSettings.sortDirection === 'desc' && <Check className="w-3 h-3 text-telegram-primary" />}
@@ -137,19 +137,19 @@ export function TopBar({
                 <div className="relative">
                     <button 
                         onClick={(e) => { e.stopPropagation(); toggleDropdown('view'); }}
-                        className="flex items-center gap-2 px-3 py-1.5 hover:bg-telegram-hover rounded-md text-sm font-medium transition-colors"
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${activeDropdown === 'view' ? 'bg-telegram-hover text-telegram-primary' : 'hover:bg-telegram-hover text-telegram-text'}`}
                     >
-                        <LayoutList className="w-4 h-4" />
-                        <span>View</span>
+                        {viewSettings.viewMode === 'grid' ? <Grid2X2 className="w-4 h-4" /> : <List className="w-4 h-4" />}
+                        <span>{viewSettings.viewMode === 'grid' ? 'Tiles' : 'Details'}</span>
                         <ChevronDown className={`w-3 h-3 transition-transform ${activeDropdown === 'view' ? 'rotate-180' : ''}`} />
                     </button>
                     {activeDropdown === 'view' && (
                         <div className="absolute top-full left-0 mt-1 w-48 bg-telegram-surface border border-telegram-border rounded-lg shadow-2xl p-1 z-50">
-                            <button onClick={() => onUpdateViewSettings({ viewMode: 'list' })} className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-telegram-hover rounded-md transition-colors">
+                            <button onClick={() => { onUpdateViewSettings({ viewMode: 'list' }); setActiveDropdown(null); }} className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-telegram-hover rounded-md transition-colors text-telegram-text">
                                 <List className="w-4 h-4" /> Details
                                 {viewSettings.viewMode === 'list' && <Check className="w-3 h-3 ml-auto text-telegram-primary" />}
                             </button>
-                            <button onClick={() => onUpdateViewSettings({ viewMode: 'grid' })} className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-telegram-hover rounded-md transition-colors">
+                            <button onClick={() => { onUpdateViewSettings({ viewMode: 'grid' }); setActiveDropdown(null); }} className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-telegram-hover rounded-md transition-colors text-telegram-text">
                                 <Grid2X2 className="w-4 h-4" /> Tiles
                                 {viewSettings.viewMode === 'grid' && <Check className="w-3 h-3 ml-auto text-telegram-primary" />}
                             </button>
@@ -158,8 +158,8 @@ export function TopBar({
                             {(['none', 'type', 'date'] as GroupBy[]).map(group => (
                                 <button 
                                     key={group}
-                                    onClick={() => onUpdateViewSettings({ groupBy: group })}
-                                    className="flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-telegram-hover rounded-md transition-colors capitalize"
+                                    onClick={() => { onUpdateViewSettings({ groupBy: group }); setActiveDropdown(null); }}
+                                    className="flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-telegram-hover rounded-md transition-colors capitalize text-telegram-text"
                                 >
                                     {group}
                                     {viewSettings.groupBy === group && <Check className="w-3 h-3 text-telegram-primary" />}

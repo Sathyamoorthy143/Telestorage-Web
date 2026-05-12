@@ -62,6 +62,8 @@ function RecursiveTree({
     };
 
     const handleContextMenu = (e: React.MouseEvent, folderId: number, folderName: string) => {
+        e.preventDefault();
+        e.stopPropagation();
         setContextMenu({ x: e.clientX, y: e.clientY, folderId, folderName });
     };
 
