@@ -62,6 +62,18 @@ export interface FolderMetadata {
 export type i64 = number;
 export type bool = boolean;
 
+export type SortField = 'name' | 'size' | 'date' | 'type';
+export type SortDirection = 'asc' | 'desc';
+export type GroupBy = 'none' | 'type' | 'date';
+
+export interface ViewSettings {
+    viewMode: 'grid' | 'list';
+    groupBy: GroupBy;
+    showPreviewPane: boolean;
+    sortField: SortField;
+    sortDirection: SortDirection;
+}
+
 export interface Clipboard {
     type: 'cut' | 'copy';
     messageIds: number[];

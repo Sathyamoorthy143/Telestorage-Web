@@ -43,7 +43,13 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
 
     const [previewFile, setPreviewFile] = useState<TelegramFile | null>(null);
-    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [viewSettings, setViewSettings] = useState<ViewSettings>({
+        viewMode: 'grid',
+        groupBy: 'none',
+        showPreviewPane: false,
+        sortField: 'name',
+        sortDirection: 'asc'
+    });
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [showMoveModal, setShowMoveModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -68,18 +74,22 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
 
     useEffect(() => {
         if (store) {
-            store.get<'grid' | 'list'>('viewMode').then((saved) => {
-                if (saved) setViewMode(saved);
+            store.get<ViewSettings>('viewSettings').then((saved) => {
+                if (saved) setViewSettings(saved);
+                else {
+                    store.get<'grid' | 'list'>('viewMode').then((oldMode) => {
+                        if (oldMode) setViewSettings(v => ({ ...v, viewMode: oldMode }));
+                    });
+                }
             });
         }
     }, [store]);
 
     useEffect(() => {
         if (store) {
-            store.set('viewMode', viewMode).then(() => store.save());
+            store.set('viewSettings', viewSettings).then(() => store.save());
         }
-    }, [store, viewMode]);
-
+    }, [store, viewSettings]);
 
     const { data: allFiles = [], isLoading, error } = useQuery({
         queryKey: ['files', activeFolderId],
@@ -124,9 +134,13 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     } = useFileOperations(activeFolderId, selectedIds, setSelectedIds, displayedFiles, clipboard, setClipboard);
 
     const {
-        uploadQueue, setUploadQueue, handleManualUpload, handleFolderUpload, cancelAll: cancelUploads, isDragging
+        uploadQueue, setUploadQueue, handleManualUpload, handleFolderUpload, handleDroppedFiles, cancelAll: cancelUploads, isDragging
     } = useFileUpload(activeFolderId, store);
     const { downloadQueue, queueDownload, clearFinished: clearDownloads, cancelAll: cancelDownloads } = useFileDownload(store);
+
+    const onUpdateViewSettings = (settings: Partial<ViewSettings>) => {
+        setViewSettings(prev => ({ ...prev, ...settings }));
+    };
 
 
     const handleSelectAll = useCallback(() => {
@@ -484,8 +498,10 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     onBulkDownload={handleBulkDownload}
                     onBulkDelete={handleBulkDelete}
                     onDownloadFolder={handleDownloadFolder}
-                    viewMode={viewMode}
-                    setViewMode={setViewMode}
+                    onManualUpload={handleManualUpload}
+                    onFolderUpload={handleFolderUpload}
+                    viewSettings={viewSettings}
+                    onUpdateViewSettings={onUpdateViewSettings}
                     searchTerm={searchTerm}
                     onSearchChange={setSearchTerm}
                 />
@@ -497,11 +513,11 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     </div>
                 )}
                 <FileExplorer
-
                     files={displayedFiles}
                     loading={isLoading || isSearching}
                     error={error}
-                    viewMode={viewMode}
+                    viewSettings={viewSettings}
+                    onUpdateViewSettings={onUpdateViewSettings}
                     selectedIds={selectedIds}
                     activeFolderId={activeFolderId}
                     onFileClick={handleFileClick}
@@ -510,9 +526,10 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
                     onPreview={handlePreview}
                     onManualUpload={handleManualUpload}
                     onFolderUpload={handleFolderUpload}
+                    handleDroppedFiles={handleDroppedFiles}
                     onSelectionClear={() => setSelectedIds([])}
                     onToggleSelection={handleToggleSelection}
-                    onDrop={handleDropOnFolder}
+                    onDrop={(e, targetId) => handleDropOnFolder(e, targetId)}
                     onDragStart={(fileId) => setInternalDragFileId(fileId)}
                     onDragEnd={() => setTimeout(() => setInternalDragFileId(null), 50)}
                     onRename={handleRename}

@@ -1,5 +1,11 @@
-import { HardDrive, LayoutGrid, Sun, Moon } from 'lucide-react';
+import { 
+    HardDrive, LayoutGrid, Sun, Moon, ChevronDown, ListFilter, 
+    SlidersHorizontal, PanelRightClose, PanelRightOpen, FilePlus, 
+    FolderPlus, ArrowUpDown, Check, List, Grid2X2, LayoutList, Search
+} from 'lucide-react';
+import { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { ViewSettings, SortField, GroupBy } from '../../types';
 
 interface TopBarProps {
     currentFolderName: string;
@@ -8,79 +14,179 @@ interface TopBarProps {
     onBulkDownload: () => void;
     onBulkDelete: () => void;
     onDownloadFolder: () => void;
-    viewMode: 'grid' | 'list';
-    setViewMode: (mode: 'grid' | 'list') => void;
+    onManualUpload: () => void;
+    onFolderUpload: () => void;
+    viewSettings: ViewSettings;
+    onUpdateViewSettings: (settings: Partial<ViewSettings>) => void;
     searchTerm: string;
     onSearchChange: (term: string) => void;
 }
 
 export function TopBar({
     currentFolderName, selectedIds, onShowMoveModal, onBulkDownload, onBulkDelete,
-    onDownloadFolder, viewMode, setViewMode, searchTerm, onSearchChange
+    onDownloadFolder, onManualUpload, onFolderUpload, viewSettings, onUpdateViewSettings, 
+    searchTerm, onSearchChange
 }: TopBarProps) {
     const { theme, toggleTheme } = useTheme();
+    const [activeDropdown, setActiveDropdown] = useState<'new' | 'sort' | 'view' | null>(null);
+
+    const toggleDropdown = (name: 'new' | 'sort' | 'view') => {
+        setActiveDropdown(activeDropdown === name ? null : name);
+    };
 
     return (
-        <header className="h-14 border-b border-telegram-border flex items-center px-4 justify-between bg-telegram-surface/80 backdrop-blur-md sticky top-0 z-10" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-4">
-                <div className="flex items-center text-sm breadcrumbs text-telegram-subtext select-none">
-                    <span className="hover:text-telegram-text cursor-pointer transition-colors">Start</span>
-                    <span className="mx-2">/</span>
-                    <span className="text-telegram-text font-medium">{currentFolderName}</span>
+        <header className="h-12 border-b border-telegram-border flex items-center px-4 justify-between bg-telegram-surface/95 backdrop-blur-md sticky top-0 z-30 select-none" onClick={() => setActiveDropdown(null)}>
+            <div className="flex items-center gap-1 overflow-hidden">
+                {/* New Menu */}
+                <div className="relative">
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); toggleDropdown('new'); }}
+                        className="flex items-center gap-2 px-3 py-1.5 hover:bg-telegram-hover rounded-md text-sm font-medium transition-colors"
+                    >
+                        <FilePlus className="w-4 h-4 text-telegram-primary" />
+                        <span>New</span>
+                        <ChevronDown className={`w-3 h-3 transition-transform ${activeDropdown === 'new' ? 'rotate-180' : ''}`} />
+                    </button>
+                    {activeDropdown === 'new' && (
+                        <div className="absolute top-full left-0 mt-1 w-48 bg-telegram-surface border border-telegram-border rounded-lg shadow-2xl p-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+                            <button onClick={onManualUpload} className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-telegram-hover rounded-md transition-colors">
+                                <FilePlus className="w-4 h-4 text-blue-400" /> Upload File
+                            </button>
+                            <button onClick={onFolderUpload} className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-telegram-hover rounded-md transition-colors">
+                                <FolderPlus className="w-4 h-4 text-yellow-500" /> Upload Folder
+                            </button>
+                        </div>
+                    )}
                 </div>
-            </div>
-
-            <div className="flex-1 max-w-md mx-4">
-                <input
-                    type="text"
-                    placeholder="Search files..."
-                    className="w-full bg-telegram-hover border border-telegram-border rounded-lg px-3 py-1.5 text-sm text-telegram-text placeholder:text-telegram-subtext focus:outline-none focus:border-telegram-primary/50 transition-colors"
-                    value={searchTerm}
-                    onChange={(e) => onSearchChange(e.target.value)}
-                />
-            </div>
-
-            <div className="flex items-center gap-2">
-                {selectedIds.length > 0 && (
-                    <div className="flex items-center gap-2 mr-4 animate-in fade-in slide-in-from-top-2">
-                        <span className="text-xs text-telegram-subtext mr-2">{selectedIds.length} Selected</span>
-                        <button onClick={onShowMoveModal} className="px-3 py-1.5 bg-telegram-primary/20 hover:bg-telegram-primary/30 text-telegram-primary rounded-md text-xs transition font-medium">Move to...</button>
-                        <button onClick={onBulkDownload} className="px-3 py-1.5 bg-telegram-hover hover:bg-telegram-border rounded-md text-xs text-telegram-text transition">Download Selected</button>
-                        <button onClick={onBulkDelete} className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-md text-xs transition">Delete</button>
-                    </div>
-                )}
-
-                <button onClick={onDownloadFolder} className="p-2 hover:bg-telegram-hover rounded-md text-telegram-subtext hover:text-telegram-text transition group relative" title="Download Folder">
-                    <HardDrive className="w-5 h-5" />
-                    <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[10px] bg-telegram-surface border border-telegram-border px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
-                        Download All Files
-                    </span>
-                </button>
-
-                <button
-                    onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-                    className="p-2 hover:bg-telegram-hover rounded-md text-telegram-subtext hover:text-telegram-text transition relative group"
-                    title="Toggle Layout"
-                >
-                    <LayoutGrid className="w-5 h-5" />
-                    <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[10px] bg-telegram-surface border border-telegram-border px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
-                        {viewMode === 'grid' ? 'Switch to List' : 'Switch to Grid'}
-                    </span>
-                </button>
 
                 <div className="w-px h-6 bg-telegram-border mx-1"></div>
 
-                <button
-                    onClick={toggleTheme}
-                    className="p-2 hover:bg-telegram-hover rounded-md text-telegram-subtext hover:text-telegram-text transition relative group"
-                    title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                {/* Selection Actions */}
+                {selectedIds.length > 0 ? (
+                    <div className="flex items-center gap-1 animate-in fade-in slide-in-from-left-2">
+                        <button onClick={onBulkDownload} className="p-2 hover:bg-telegram-hover rounded-md text-telegram-text transition" title="Download Selected">
+                            <HardDrive className="w-4 h-4" />
+                        </button>
+                        <button onClick={onShowMoveModal} className="p-2 hover:bg-telegram-hover rounded-md text-telegram-text transition" title="Move Selected">
+                            <SlidersHorizontal className="w-4 h-4" />
+                        </button>
+                        <button onClick={onBulkDelete} className="p-2 hover:bg-telegram-hover rounded-md text-red-400 transition" title="Delete Selected">
+                            <Check className="w-4 h-4 rotate-45" />
+                        </button>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-1">
+                        <button className="p-2 hover:bg-telegram-hover rounded-md text-telegram-subtext transition disabled:opacity-30" disabled><LayoutGrid className="w-4 h-4" /></button>
+                        <button className="p-2 hover:bg-telegram-hover rounded-md text-telegram-subtext transition disabled:opacity-30" disabled><Check className="w-4 h-4" /></button>
+                    </div>
+                )}
+
+                <div className="w-px h-6 bg-telegram-border mx-1"></div>
+
+                {/* Sort Menu */}
+                <div className="relative">
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); toggleDropdown('sort'); }}
+                        className="flex items-center gap-2 px-3 py-1.5 hover:bg-telegram-hover rounded-md text-sm font-medium transition-colors"
+                    >
+                        <ArrowUpDown className="w-4 h-4" />
+                        <span>Sort</span>
+                        <ChevronDown className={`w-3 h-3 transition-transform ${activeDropdown === 'sort' ? 'rotate-180' : ''}`} />
+                    </button>
+                    {activeDropdown === 'sort' && (
+                        <div className="absolute top-full left-0 mt-1 w-48 bg-telegram-surface border border-telegram-border rounded-lg shadow-2xl p-1 z-50">
+                            {(['name', 'date', 'type', 'size'] as SortField[]).map(field => (
+                                <button 
+                                    key={field}
+                                    onClick={() => onUpdateViewSettings({ sortField: field })}
+                                    className="flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-telegram-hover rounded-md transition-colors capitalize"
+                                >
+                                    {field}
+                                    {viewSettings.sortField === field && <Check className="w-3 h-3 text-telegram-primary" />}
+                                </button>
+                            ))}
+                            <div className="h-px bg-telegram-border my-1"></div>
+                            <button 
+                                onClick={() => onUpdateViewSettings({ sortDirection: 'asc' })}
+                                className="flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-telegram-hover rounded-md transition-colors"
+                            >
+                                Ascending
+                                {viewSettings.sortDirection === 'asc' && <Check className="w-3 h-3 text-telegram-primary" />}
+                            </button>
+                            <button 
+                                onClick={() => onUpdateViewSettings({ sortDirection: 'desc' })}
+                                className="flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-telegram-hover rounded-md transition-colors"
+                            >
+                                Descending
+                                {viewSettings.sortDirection === 'desc' && <Check className="w-3 h-3 text-telegram-primary" />}
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {/* View Menu */}
+                <div className="relative">
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); toggleDropdown('view'); }}
+                        className="flex items-center gap-2 px-3 py-1.5 hover:bg-telegram-hover rounded-md text-sm font-medium transition-colors"
+                    >
+                        <LayoutList className="w-4 h-4" />
+                        <span>View</span>
+                        <ChevronDown className={`w-3 h-3 transition-transform ${activeDropdown === 'view' ? 'rotate-180' : ''}`} />
+                    </button>
+                    {activeDropdown === 'view' && (
+                        <div className="absolute top-full left-0 mt-1 w-48 bg-telegram-surface border border-telegram-border rounded-lg shadow-2xl p-1 z-50">
+                            <button onClick={() => onUpdateViewSettings({ viewMode: 'list' })} className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-telegram-hover rounded-md transition-colors">
+                                <List className="w-4 h-4" /> Details
+                                {viewSettings.viewMode === 'list' && <Check className="w-3 h-3 ml-auto text-telegram-primary" />}
+                            </button>
+                            <button onClick={() => onUpdateViewSettings({ viewMode: 'grid' })} className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-telegram-hover rounded-md transition-colors">
+                                <Grid2X2 className="w-4 h-4" /> Tiles
+                                {viewSettings.viewMode === 'grid' && <Check className="w-3 h-3 ml-auto text-telegram-primary" />}
+                            </button>
+                            <div className="h-px bg-telegram-border my-1"></div>
+                            <div className="px-3 py-1 text-[10px] uppercase tracking-wider text-telegram-subtext font-bold">Group by</div>
+                            {(['none', 'type', 'date'] as GroupBy[]).map(group => (
+                                <button 
+                                    key={group}
+                                    onClick={() => onUpdateViewSettings({ groupBy: group })}
+                                    className="flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-telegram-hover rounded-md transition-colors capitalize"
+                                >
+                                    {group}
+                                    {viewSettings.groupBy === group && <Check className="w-3 h-3 text-telegram-primary" />}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+                <div className="relative group flex items-center">
+                    <Search className="w-4 h-4 absolute left-3 text-telegram-subtext group-focus-within:text-telegram-primary transition-colors" />
+                    <input
+                        type="text"
+                        placeholder="Search current folder..."
+                        className="bg-telegram-hover/50 border border-telegram-border rounded-full pl-9 pr-4 py-1.5 text-sm text-telegram-text placeholder:text-telegram-subtext focus:outline-none focus:border-telegram-primary/50 focus:bg-telegram-surface transition-all w-48 focus:w-64"
+                        value={searchTerm}
+                        onChange={(e) => onSearchChange(e.target.value)}
+                    />
+                </div>
+
+                <div className="w-px h-6 bg-telegram-border mx-1"></div>
+
+                <button 
+                    onClick={() => onUpdateViewSettings({ showPreviewPane: !viewSettings.showPreviewPane })}
+                    className={`p-2 rounded-md transition-colors ${viewSettings.showPreviewPane ? 'bg-telegram-primary/20 text-telegram-primary' : 'hover:bg-telegram-hover text-telegram-subtext'}`}
+                    title="Toggle Preview Pane"
                 >
+                    {viewSettings.showPreviewPane ? <PanelRightClose className="w-5 h-5" /> : <PanelRightOpen className="w-5 h-5" />}
+                </button>
+
+                <button onClick={toggleTheme} className="p-2 hover:bg-telegram-hover rounded-md text-telegram-subtext transition">
                     {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-                    <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[10px] bg-telegram-surface border border-telegram-border px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
-                        {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-                    </span>
                 </button>
             </div>
         </header>
-    )
+    );
 }

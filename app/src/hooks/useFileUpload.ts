@@ -119,24 +119,31 @@ export function useFileUpload(activeFolderId: number | null, store: Store | null
             const selected = await open({ multiple: true, directory: false });
             if (selected) {
                 const paths = Array.isArray(selected) ? selected : [selected];
-                
-                const newItems: QueueItem[] = [];
-                for (const path of paths) {
-                    const info = await stat(path);
-                    newItems.push({
-                        id: Math.random().toString(36).substr(2, 9),
-                        path,
-                        size: info.size,
-                        folderId: activeFolderId,
-                        status: 'pending'
-                    });
-                }
-                
-                setUploadQueue(prev => [...prev, ...newItems]);
-                toast.info(`Queued ${paths.length} files for upload`);
+                await handleDroppedFiles(paths);
             }
         } catch (err) {
             toast.error("Failed to open file dialog or get file info: " + err);
+        }
+    };
+
+    const handleDroppedFiles = async (paths: string[]) => {
+        try {
+            const newItems: QueueItem[] = [];
+            for (const path of paths) {
+                const info = await stat(path);
+                newItems.push({
+                    id: Math.random().toString(36).substr(2, 9),
+                    path,
+                    size: info.size,
+                    folderId: activeFolderId,
+                    status: 'pending'
+                });
+            }
+            
+            setUploadQueue(prev => [...prev, ...newItems]);
+            toast.info(`Queued ${paths.length} files for upload`);
+        } catch (err) {
+            toast.error("Failed to process dropped files: " + err);
         }
     };
 
@@ -172,6 +179,7 @@ export function useFileUpload(activeFolderId: number | null, store: Store | null
         setUploadQueue,
         handleManualUpload,
         handleFolderUpload,
+        handleDroppedFiles,
         cancelAll,
         isDragging
     };
