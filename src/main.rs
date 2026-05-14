@@ -63,7 +63,7 @@ async fn main() -> std::io::Result<()> {
                     .route("/gemini-chat", web::post().to(handlers::gemini_chat))
                     
                     // Streaming & Previews
-                    .route("/get-stream-token", web::get().to(handlers::get_stream_token))
+                    .route("/get-stream-info", web::get().to(handlers::get_stream_info))
                     .route("/get-preview", web::get().to(handlers::get_preview))
                     .route("/get-thumbnail", web::get().to(handlers::get_thumbnail))
             )
