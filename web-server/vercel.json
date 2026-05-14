@@ -14,9 +14,10 @@
   "routes": [
     { "src": "/api/(.*)", "dest": "src/main.rs" },
     { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/index.html" }
+    { "src": "/(.*)", "dest": "/frontend/index.html" }
   ]
 }
+
 
 
 
