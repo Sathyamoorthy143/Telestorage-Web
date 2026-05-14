@@ -11,10 +11,12 @@
       "use": "vercel-rust"
     }
   ],
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "src/main.rs" },
-    { "source": "/(.*)", "destination": "/index.html" }
+  "routes": [
+    { "src": "/api/(.*)", "dest": "src/main.rs" },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
+
 
 
