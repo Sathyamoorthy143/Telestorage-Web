@@ -47,13 +47,33 @@ async fn main() -> std::io::Result<()> {
             .wrap(Cors::permissive())
             .service(
                 web::scope("/api")
-                    .route("/auth/request_code", web::post().to(handlers::auth_request_code))
-                    .route("/auth/sign_in", web::post().to(handlers::auth_sign_in))
-                    .route("/auth/user_info", web::get().to(handlers::get_user_info))
+                    // Auth
+                    .route("/auth/request-code", web::post().to(handlers::auth_request_code))
+                    .route("/auth/sign-in", web::post().to(handlers::auth_sign_in))
+                    .route("/auth/user-info", web::get().to(handlers::get_user_info))
+                    
+                    // Files & Folders
                     .route("/files", web::get().to(handlers::get_files))
                     .route("/folders/scan", web::get().to(handlers::scan_folders))
+                    .route("/folders/create", web::post().to(handlers::create_folder))
+                    .route("/files/delete", web::post().to(handlers::delete_file))
+                    .route("/get-bandwidth", web::get().to(handlers::get_bandwidth))
+                    
+                    // AI
+                    .route("/gemini-chat", web::post().to(handlers::gemini_chat))
+                    
+                    // Streaming & Previews
+                    .route("/get-stream-info", web::get().to(handlers::get_stream_info))
+                    .route("/get-preview", web::get().to(handlers::get_preview))
+                    .route("/get-thumbnail", web::get().to(handlers::get_thumbnail))
             )
             .service(Files::new("/", "./dist").index_file("index.html"))
+            // SPA catch-all
+            .default_service(web::route().to(|| async {
+                HttpResponse::Ok()
+                    .content_type("text/html")
+                    .body(include_str!("../dist/index.html"))
+            }))
     })
     .bind(("0.0.0.0", port))?
     .run()
