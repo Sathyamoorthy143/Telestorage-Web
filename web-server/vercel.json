@@ -13,10 +13,11 @@
   ],
   "routes": [
     { "src": "/api/(.*)", "dest": "src/main.rs" },
-    { "handle": "filesystem" },
+    { "src": "/assets/(.*)", "dest": "/frontend/assets/$1" },
     { "src": "/(.*)", "dest": "/frontend/index.html" }
   ]
 }
+
 
 
 
